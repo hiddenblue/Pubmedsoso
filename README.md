@@ -30,6 +30,15 @@ pefile==2021.9.3
 
 xlwt==1.3.0
 
+模块介绍：
+
+main.py文件是整个项目运行的主要文件
+spiderpub.py负责从pubmed检索页提取出所有的必要信息，储存到数据库和txt文本文件中
+geteachinfo.py负责从数据库提取出spiderpub提取的信息，打开每个文献的单独页面，提取摘要和关键词等，获得pmcid，即文献下载地址信息
+downpmc.py文件再次从数据库中提取出每个pmcid，打开页面对文献进行下载，储存，同时将保存路径储存到sqlite3数据库，最后将sqlite3中的提取的所有关于文献的信息导出到excel文件中。
+timevar.py文件，里面含有一个在整个程序一次运行中，需要被所有模块都调用的信息，savetime，会被用于生成txt文件和excel文件名称，还有sqlite3中的table名称
+
+
 使用方法：
 
 1.打开pubmed，https://pubmed.ncbi.nlm.nih.gov/
