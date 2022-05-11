@@ -29,7 +29,8 @@ xlwt==1.3.0
 
 
 
-2.将地址栏中位于nih.gov/后的参数复制下来，比如我这里是“?term=alzheimer%27s+disease&filter=datesearch.y_5&size=20”
+2.将地址栏中位于nih.gov/后的参数复制下来，比如我这里是
+“?term=alzheimer%27s+disease&filter=datesearch.y_5&size=20”
 
 
 
