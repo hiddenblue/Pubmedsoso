@@ -1,4 +1,8 @@
 # Pubmedsoso
+  
+  ![image](https://user-images.githubusercontent.com/62304226/167968328-753daa63-9087-4243-ad0b-b8a1b2ba0b0f.png)
+
+
 
 一个自动批量提取pubmed文献信息和下载免费文献的小工具
 
