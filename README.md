@@ -30,10 +30,6 @@ beautifulsoup4
 
 eventlet 
 
-importlib-metadata==4.11.3
-
-pefile==2021.9.3
-
 xlwt==1.3.0
 
 # 模块介绍：
