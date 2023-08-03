@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
-from spiderpub import spiderpub
-from downpmc import downpmc
-from geteachinfo import geteachinfo
 import os
 from time import sleep
-print('--'*25,'\n')
+
+from downpmc import downpmc
+from geteachinfo import geteachinfo
+from spiderpub import spiderpub
+
+print('--' * 25, '\n')
 print("程序已运行，开始检查数据储存目录\n\n")
-print('--'*25)
+print('--' * 25)
 sleep(1.5)
 if os.path.exists('./document'):
     if os.path.exists('./document/pub'):
@@ -22,6 +24,7 @@ print("document/pub目录检查完成，开始执行主程序\n")
 print('--'*25,'\n')
 
 def main():
+
     parameter = str(input("请在下面粘贴你构建的搜索结果的parameter\n"))
     sleep(1)
     if parameter == '':
@@ -34,8 +37,10 @@ def main():
     sleep(1)
 
     spiderpub(parameter, num1)
-    geteachinfo()
+    geteachinfo(dbpath)
     downpmc(limit)
 
+
+dbpath = "./pubmedsql"
 main()
-#?term=cell%2Bblood&filter=datesearch.y_1&size=20
+# ?term=cell%2Bblood&filter=datesearch.y_1&size=20

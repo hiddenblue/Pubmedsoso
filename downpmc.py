@@ -1,24 +1,26 @@
 # -*- coding: utf-8 -*-
-from socket import socket, timeout
-import urllib
-from urllib import request
-import urllib.error
-from geteachinfo import readdata1
-import sqlite3
 import random
-import time
 import re
+import sqlite3
+import time
+import urllib
+import urllib.error
+from urllib import request
+
 import eventlet
 import xlwt
+
+from geteachinfo import readdata1
 from timevar import savetime
 
-#https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9034016/pdf/main.pdf
+
+# https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9034016/pdf/main.pdf
 def downpdf(parameter):
     eventlet.monkey_patch()
-    downpara="pmc/articles/"+parameter+"/pdf/main.pdf"
-    #openurl是用于使用指定的搜索parameter进行检索，以get的方式获取pubmed的搜索结果页面，返回成html文件
+    downpara = "pmc/articles/" + parameter + "/pdf/main.pdf"
+    # openurl是用于使用指定的搜索parameter进行检索，以get的方式获取pubmed的搜索结果页面，返回成html文件
     baseurl = "https://www.ncbi.nlm.nih.gov/"
-    url=baseurl+downpara
+    url = baseurl + downpara
     timeout_flag=0
     header={"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36 Edg/101.0.1210.32"}
     request=urllib.request.Request(url,headers=header)
@@ -48,25 +50,26 @@ def downpdf(parameter):
     except:
         print("%s.pdf"%parameter,"从目标站获取pdf数据失败")
 
-def savepdf(html,PMCID,name,dbpath):
-    tablename = 'pubmed%s'%savetime
+
+def savepdf(html, PMCID, name, dbpath):
+    tablename = 'pubmed%s' % savetime
     # pdf = html.decode("utf-8")  # 使用Unicode8对二进制网页进行解码，直接写入文件就不需要解码了
 
     try:
-        name=re.sub(r'[< > / \\ | : " * ?]',' ',name)
-        #需要注意的是文件命名中不能含有以上特殊符号，只能去除掉
-        savepath="./document/pub/%s.pdf"%name
-        file=open(savepath,'wb')
+        name = re.sub(r'[< > / \\ | : " * ?]', ' ', name)
+        # 需要注意的是文件命名中不能含有以上特殊符号，只能去除掉
+        savepath = "./document/pub/%s.pdf" % name
+        file = open(savepath, 'wb')
         print("open success")
         file.write(html)
         file.close()
         # print("%s.pdf"%name,"文件写入到Pubmed/document/pub/下成功")
-        print("pdf文件写入成功,文件ID为 %s"%PMCID,"保存路径为Pubmed/document/pub/")
+        print("pdf文件写入成功,文件ID为 %s" % PMCID, "保存路径为Pubmed/document/pub/")
         try:
-            conn=sqlite3.connect(dbpath)
-            cursor=conn.cursor()
-            cursor.execute(" UPDATE %s SET savepath = ? WHERE PMCID =?"%tablename,
-                           (savepath,PMCID))
+            conn = sqlite3.connect(dbpath)
+            cursor = conn.cursor()
+            cursor.execute(" UPDATE %s SET savepath = ? WHERE PMCID =?" % tablename,
+                           (savepath, PMCID))
             conn.commit()
             cursor.close()
             return 'success'
@@ -130,21 +133,20 @@ def downpmc(limit):
         #result是从数据库获取的列表元组，其中的每一项构成为PMCID,doctitle
         html=downpdf(item[0])
         if html==None:
-            print("网页pdf数据不存在，自动跳过该文献 PMCID为 %s"%item[0])
+            print("网页pdf数据不存在，自动跳过该文献 PMCID为 %s" % item[0])
             continue
-        elif html==1:
-            print("30s超时,自动跳过该文献 PMCID为 %s"%item[0])
+        elif html == 1:
+            print("30s超时,自动跳过该文献 PMCID为 %s" % item[0])
             continue
-        status=savepdf(html,item[0],item[1],dbpath)
-        if status==None:
-            print("保存pdf文件发生错误，自动跳过该文献PMCID为 %s"%item[0])
+        status = savepdf(html, item[0], item[1], dbpath)
+        if status == None:
+            print("保存pdf文件发生错误，自动跳过该文献PMCID为 %s" % item[0])
             continue
-        time.sleep(random.randint(0,1))
-    save2excel('./pubmedsql')
-    print("爬取最终结果信息已经自动保存到excel表格中，文件名为%s"%tablename)
+        time.sleep(random.randint(0, 1))
+    save2excel(dbpath)  # 这里我把默认的数据库路径改成了全局变量dbpath
+    print("爬取最终结果信息已经自动保存到excel表格中，文件名为%s" % tablename)
     print("爬取的所有文献已经保存到/document/pub/目录下")
     print("爬取程序已经执行完成，自动退出, 哈哈，no errors no warning")
-
 
     # for i in range(len(result)):
     #

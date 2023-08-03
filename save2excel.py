@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
 import sqlite3
-import xlwt
 from time import sleep
 
+import xlwt
+
+
 def save2excel(dbpath):
-    savepath='./pudmed-%s.xls'%savetime
+    savepath = './pudmed-%s.xls' % savetime
     tablename = 'pubmed%s' % savetime
     try:
         try:
             conn = sqlite3.connect(dbpath)
             cursor = conn.cursor()
-            sql = '''SELECT * FROM %s'''%tablename
+            sql = '''SELECT * FROM %s''' % tablename
             cursor.execute(sql)
             savedata = cursor.fetchall()
             # print(savedata)
@@ -54,39 +56,40 @@ def gettable(dbpath):
         conn = sqlite3.connect(dbpath)
         cursor = conn.cursor()
         cursor.execute("SELECT name from sqlite_master where type='table' order by name")
-        tablelist=cursor.fetchall()
+        tablelist = cursor.fetchall()
         conn.commit()
         cursor.close()
         for i in range(len(tablelist)):
-            tablelist[i]=tablelist[i][0]
+            tablelist[i] = tablelist[i][0]
         del tablelist[-1]
         return tablelist
     except:
         print("数据库查询出错，请检查数据库")
 
-tablelist=gettable(dbpath)
-if tablelist==None:
+
+tablelist = gettable(dbpath)
+if tablelist == None:
     print("目标数据库不存在或者内容为空，请检查数据库，即将退出")
-    sleep(2)
+    sleep(1)
     exit()
 print("\n")
-x=99
-while x!=0:
+x = 99
+while x != 0:
     sleep(0.5)
     print("当前数据库中含有以下table（数据表格） pubmed后面的数字为生成时精确到秒的时间\n", '----' * 20, '\n')
     for i in range(len(tablelist)):
         print("[%d]%s  " % (i + 1, tablelist[i]), end='')
     print("\n")
-    print('----'*20)
-    x=int(input("\n请输入你想要导出生成excel表格的数据库table编号，如1,2,3,4，输入0退出程序\n\n"))
-    if x==0:
+    print('----' * 20)
+    x = int(input("\n请输入你想要导出生成excel表格的数据库table编号，如1,2,3,4，输入0退出程序\n\n"))
+    if x == 0:
         print("欢迎使用，程序即将结束")
         sleep(0.5)
         break
-    index=tablelist[x-1]
+    index = tablelist[x - 1]
     # print(index)
     global savetime
-    savetime=index[6:]
+    savetime = index[6:]
     # print(savetime)
     save2excel(dbpath)
     print("此次保存执行完成，下一个循环")
