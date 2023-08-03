@@ -50,9 +50,11 @@ save2excel.py文件是针对有时候爬虫没执行完又想导出信息的一�
 ```bash
 git clone https://github.com/hiddenblue/Pubmedsoso.git
 cd Pubmedsoso
- pip install -r .\requirements.txt
+pip install -r .\requirements.txt
 ```
 当然，不方便安装git工具的话，可以手动下载zip文件夹运行
+![image](https://github.com/hiddenblue/Pubmedsoso/assets/62304226/9efbf1e4-d4e3-4029-9754-07c3c2290d57)
+
 
 2.打开pubmed，https://pubmed.ncbi.nlm.nih.gov/
 
