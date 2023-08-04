@@ -1,0 +1,28 @@
+#这个文件里保存了pubmedsoso的配置文件，global影响两种模式下的参数，默认值可以修改
+global_params:
+  sql_path: "."
+  excel_path: "."
+  doc_down_path: "./document/pub"
+  default_name: "pubmedsql"
+  excel_output: true
+  log_output: true
+# use_mode 可以选command模式，需要对命令行手动输入搜索参数，script模式自动执行，不需要交互，需要配置好参数
+use_mode: "script"
+##script模式参数
+scipt_mode_args:
+  page_num: 1  #默认下载文献信息的页数
+  download_num: 1  # 默认只下载一篇文献PDF
+  search_keywords:
+  #默认pubmed搜索的参数 ，模式搜索阿尔茨海默病等，是一个list类型，可以在后面以-  xxxxx的形式添加关键词，缩进用空格和示例保持一致
+  - alzheimer‘s disease
+  - maize
+  - HIV
+## command模式参数
+#暂时还没想好
+command_mode_args:
+  #没想好。
+  test_arg: "test"
+
+
+
+#

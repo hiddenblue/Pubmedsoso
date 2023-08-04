@@ -66,35 +66,35 @@ def gettable(dbpath):
     except:
         print("数据库查询出错，请检查数据库")
 
-
-tablelist = gettable(dbpath)
-if tablelist == None:
-    print("目标数据库不存在或者内容为空，请检查数据库，即将退出")
-    sleep(1)
-    exit()
-print("\n")
-x = 99
-while x != 0:
-    sleep(0.5)
-    print("当前数据库中含有以下table（数据表格） pubmed后面的数字为生成时精确到秒的时间\n", '----' * 20, '\n')
-    for i in range(len(tablelist)):
-        print("[%d]%s  " % (i + 1, tablelist[i]), end='')
+if __name__ == "__main__":
+    tablelist = gettable(dbpath)
+    if tablelist == None:
+        print("目标数据库不存在或者内容为空，请检查数据库，即将退出")
+        sleep(1)
+        exit()
     print("\n")
-    print('----' * 20)
-    x = int(input("\n请输入你想要导出生成excel表格的数据库table编号，如1,2,3,4，输入0退出程序\n\n"))
-    if x == 0:
-        print("欢迎使用，程序即将结束")
+    x = 99
+    while x != 0:
         sleep(0.5)
-        break
-    index = tablelist[x - 1]
-    # print(index)
-    global savetime
-    savetime = index[6:]
-    # print(savetime)
-    save2excel(dbpath)
-    print("此次保存执行完成，下一个循环")
-    sleep(1.5)
-    print('----' * 20,"\n")
+        print("当前数据库中含有以下table（数据表格） pubmed后面的数字为生成时精确到秒的时间\n", '----' * 20, '\n')
+        for i in range(len(tablelist)):
+            print("[%d]%s  " % (i + 1, tablelist[i]), end='')
+        print("\n")
+        print('----' * 20)
+        x = int(input("\n请输入你想要导出生成excel表格的数据库table编号，如1,2,3,4，输入0退出程序\n\n"))
+        if x == 0:
+            print("欢迎使用，程序即将结束")
+            sleep(0.5)
+            break
+        index = tablelist[x - 1]
+        # print(index)
+        global savetime
+        savetime = index[6:]
+        # print(savetime)
+        save2excel(dbpath)
+        print("此次保存执行完成，下一个循环")
+        sleep(1.5)
+        print('----' * 20, "\n")
 
 
 
