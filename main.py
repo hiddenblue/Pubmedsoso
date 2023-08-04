@@ -44,3 +44,4 @@ def main():
 dbpath = "./pubmedsql"
 main()
 # ?term=cell%2Bblood&filter=datesearch.y_1&size=20
+os.system("pause")

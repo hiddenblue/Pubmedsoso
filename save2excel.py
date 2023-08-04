@@ -1,12 +1,21 @@
 # -*- coding: utf-8 -*-
 import sqlite3
 from time import sleep
+import os
 
 import xlwt
 
 
 def save2excel(dbpath):
     savepath = './pudmed-%s.xls' % savetime
+    if os.path.exists(savepath):
+        print(f"指定的保存条目文件{savepath[2:]}已存在，文件重复\n\n")
+        confirm = str(input(f"是否删除原有的{savepath[2:]}文件, y or n\n"))
+        if confirm == "y" or "yes":
+            os.remove(savepath)
+        else:
+            print("无法保存成excel文件， 文件名重复冲突\n")
+            exit(-1)
     tablename = 'pubmed%s' % savetime
     try:
         try:
@@ -40,16 +49,10 @@ def save2excel(dbpath):
                 worksheet.write(i + 1, j, savedata[i][j])
         workbook.save(savepath)
         print("\n爬取数据库信息保存到excel成功\n")
-    except:
+    except IOError:
+        print("保存excel 文件IO异常")
+    except Exception:
          print("爬取数据库信息保存到excel失败\n")
-
-global dbpath
-dbpath='pubmedsql'
-# save2excel(dbpath)
-
-    # for i in range(len(result)):
-    #
-    #     time.sleep(random.randint(1,5))
 
 def gettable(dbpath):
     try:
@@ -66,35 +69,54 @@ def gettable(dbpath):
     except:
         print("数据库查询出错，请检查数据库")
 
+if __name__ == "__main__":
+    global dbpath
+    dbpath='pubmedsql'
+    # save2excel(dbpath)
 
-tablelist = gettable(dbpath)
-if tablelist == None:
-    print("目标数据库不存在或者内容为空，请检查数据库，即将退出")
-    sleep(1)
-    exit()
-print("\n")
-x = 99
-while x != 0:
-    sleep(0.5)
-    print("当前数据库中含有以下table（数据表格） pubmed后面的数字为生成时精确到秒的时间\n", '----' * 20, '\n')
-    for i in range(len(tablelist)):
-        print("[%d]%s  " % (i + 1, tablelist[i]), end='')
+        # for i in range(len(result)):
+        #
+        #     time.sleep(random.randint(1,5))
+
+    tablelist = gettable(dbpath)
+    if tablelist == None:
+        print("目标数据库不存在或者内容为空，请检查数据库，即将退出")
+        sleep(1)
+        exit()
     print("\n")
-    print('----' * 20)
-    x = int(input("\n请输入你想要导出生成excel表格的数据库table编号，如1,2,3,4，输入0退出程序\n\n"))
-    if x == 0:
-        print("欢迎使用，程序即将结束")
+    x = 99
+    while x != 0:
         sleep(0.5)
-        break
-    index = tablelist[x - 1]
-    # print(index)
-    global savetime
-    savetime = index[6:]
-    # print(savetime)
-    save2excel(dbpath)
-    print("此次保存执行完成，下一个循环")
-    sleep(1.5)
-    print('----' * 20,"\n")
+        print("当前目录数据库中含有以下table(数据表格)pubmed后面的数字为生成时精确到秒的时间\n", '----' * 20, '\n')
+        for i in range(len(tablelist)):
+            print("[%d]%s  " % (i + 1, tablelist[i]), end='')
+        print("\n")
+        print('----' * 20)
+        try:
+            x = int(input("\n请输入你想要导出生成excel表格的数据库table编号，如1,2,3,4，输入0退出程序，注意不要输入上面的pubmedxxxxx编号\n\n"))
+        except ValueError:
+            print('----' * 20, '\n')
+            print("输入错误，如1,2,3,4，输入0退出程序，注意不要输入上面的pubmedxxxxx编号\n\n")
+            print("重新输入，下一个循环")
+            sleep(3)
+            print('----' * 20, '\n')
+
+            continue
+        if x == 0:
+            print("欢迎使用，程序即将结束")
+            sleep(0.5)
+            break
+        index = tablelist[x - 1]
+        # print(index)
+        global savetime
+        savetime = index[6:]
+        # print(savetime)
+        save2excel(dbpath)
+        print("此次保存执行完成，下一个循环")
+        sleep(3)
+        print('----' * 20,"\n")
+
+    os.system("pause")
 
 
 
