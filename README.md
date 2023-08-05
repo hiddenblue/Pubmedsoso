@@ -69,20 +69,37 @@ pubmedsoso.exe
 等待文件夹检查完成后，出现关键词输入提示
 输入需要爬取的关键词，比如“alzheimer's disease”(阿尔茨海默病）
 
+![image](https://github.com/hiddenblue/Pubmedsoso/assets/62304226/a1fd581f-b2f9-4577-a507-c4cfb40e1de5)
+
+
 *如果你熟悉IDE的话，可以在pycharm或者vscode等python环境下运行main.py*
 
-3.显示“请在下面粘贴你构建的搜索结果的parameter”后，按提示输入信息即可以，需要注意的是，输入页数时，每页50个，建议数字不用设置得太大。
+3.然后按提示输入信息即可以，设置爬取信息页数和下载数量。需要注意的是，输入页数时，每页50个，建议数字不用设置得太大。
 然后输入需要下载的文献数量，程序会从搜索结果中找到free pmc 免费文献，自动下载，这里下载速度取决你的网络状况。每个文献下载超过60s自动超时跳过，下载下一个。
+
+**pubmedsoso会按照你正常搜索的顺序进行爬取下载**
+
+![image](https://github.com/hiddenblue/Pubmedsoso/assets/62304226/841c1469-0d98-4025-9f72-33b5a4d8537c)
+
 
 4.文献会自动下载到之前说的"document/pub/"下，同时会生成原始遍历信息的txt文件，程序最终执行完成会生成excel文件。
 
   
 ![image](https://user-images.githubusercontent.com/62304226/167930022-5b73d6b1-fca9-4012-99e6-18d06a1d1c52.png)
 
-### 
-
 
 有问题可以联系我，估计bug还是挺多的，需求也可以改改，也请大家不要太过分的去爬取Pubmed
+
+## save2excel模块
+
+这个是方便大家在爬取之后，将历史信息导出到excel的模块，可以单独执行。
+比如在IDE或者命令行中执行
+`python save2excel`
+![image](https://github.com/hiddenblue/Pubmedsoso/assets/62304226/49e58490-3acf-4843-88b9-e24d17b41628)
+
+出现如上提示，可以选择sqlite3数据中的历史记录进行导出，会自动在本地生成一个导出的文件。
+
+**不能有重复命名的excel文件，需要按提示删除**
 
 ## TO DO:
 
