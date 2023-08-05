@@ -14,7 +14,7 @@ from timevar import savetime
 def opensearch(parameter):
     #openurl是用于使用指定的搜索parameter进行检索，以get的方式获取pubmed的搜索结果页面，返回成html文件
     baseurl = "https://pubmed.ncbi.nlm.nih.gov/"
-    url=baseurl+parameter
+    url=baseurl+"?"+parameter
     header={"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36 Edg/101.0.1210.32"}
     request=urllib.request.Request(url,headers=header)
     html=""
