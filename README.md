@@ -20,7 +20,7 @@
 
 
 
-主要使用了bs4，re，xlwt，urllib这些模块
+主要使用了bs4，re，xlwt，urllib
 
 发布的版本中有pyintaller打包成的exe执行文件，如果需要自己在python环境运行则需要安装以下模块哦
 
@@ -56,52 +56,39 @@ pip install -r .\requirements.txt
 ![image](https://github.com/hiddenblue/Pubmedsoso/assets/62304226/9efbf1e4-d4e3-4029-9754-07c3c2290d57)
 
 
-2.打开pubmed，https://pubmed.ncbi.nlm.nih.gov/
+2.在Windows terminal中切换到项目文件夹,执行**python main.py** 或者在直接执行exe可执行文件**pubmedsoso.exe**
 
-在pubmed搜点你想要的东西，比如我以关键词“alzheimer's disease”(阿尔茨海默病）为关键词进行检索
+```powershell
+cd pubmedsoso # 切换到pubmedsoso文件夹
+python main.py
 
+#如果是使用打包好的exe文件
+pubmedsoso.exe
+```
 
+等待文件夹检查完成后，出现关键词输入提示
+输入需要爬取的关键词，比如“alzheimer's disease”(阿尔茨海默病）
 
-![image](https://user-images.githubusercontent.com/62304226/167967880-58b42e5d-881b-4d2c-ae6c-5b0f2efcd81c.png)
+*如果你熟悉IDE的话，可以在pycharm或者vscode等python环境下运行main.py*
 
-
-
- 
-3.将地址栏中位于nih.gov/后的参数复制下来，比如我这里是
-“?term=alzheimer%27s+disease&filter=datesearch.y_5&size=20”
-
-
-
-
-![image](https://user-images.githubusercontent.com/62304226/167921897-f203dad2-cbb8-4294-96bf-27c101c91c68.png)
-   
-    
-    
-   
-    
-    
-4.直接执行exe文件，或者在命令行中运行，或者在pycharm或者vscode等python环境下运行main.py
-  
-5.显示“请在下面粘贴你构建的搜索结果的parameter”后，按提示输入信息即可以，需要注意的是，输入页数时，每页50个，如果数字太大，对服务器造成负担可能会导致ip被封（暂未发现），建议控制在
-20页以下。
+3.显示“请在下面粘贴你构建的搜索结果的parameter”后，按提示输入信息即可以，需要注意的是，输入页数时，每页50个，建议数字不用设置得太大。
 然后输入需要下载的文献数量，程序会从搜索结果中找到free pmc 免费文献，自动下载，这里下载速度取决你的网络状况。每个文献下载超过60s自动超时跳过，下载下一个。
 
-6.文献会自动下载到之前说的"document/pub/"下，同时会生成原始遍历信息的txt文件，程序最终执行完成会生成excel文件。
+4.文献会自动下载到之前说的"document/pub/"下，同时会生成原始遍历信息的txt文件，程序最终执行完成会生成excel文件。
 
-  
   
 ![image](https://user-images.githubusercontent.com/62304226/167930022-5b73d6b1-fca9-4012-99e6-18d06a1d1c52.png)
 
-  
-  
-  
+### 
+
+
 有问题可以联系我，估计bug还是挺多的，需求也可以改改，也请大家不要太过分的去爬取Pubmed
 
 ## TO DO:
 
 精确地搜索下载，这个还有点难
 
-自定义关键词下载，这个未来应该会做，等我有空弄明白pubmed的检索参数url生成规则就行
+~~自定义关键词下载，这个未来应该会做，等我有空弄明白pubmed的检索参数url生成规则就行~~（已经实现）
 
 对非免费文献的scihub自动补全下载
 
@@ -112,3 +99,6 @@ pip install -r .\requirements.txt
 ---------------------------------------------------------------------------------------
 ### 2022.5.16
 更新了自动创建document/pub文件夹功能，不需要手动创建文件夹了，会自动检查和创建。
+
+### 2023.08.05
+更新修复了abstract爬取失败的bug，同时不再需要用户手动复制粘贴网页的参数了
