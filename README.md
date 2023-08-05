@@ -94,7 +94,7 @@ pubmedsoso.exe
 
 这个是方便大家在爬取之后，将历史信息导出到excel的模块，可以单独执行。
 比如在IDE或者命令行中执行
-`python save2excel`
+`python save2excel.py`
 ![image](https://github.com/hiddenblue/Pubmedsoso/assets/62304226/49e58490-3acf-4843-88b9-e24d17b41628)
 
 出现如上提示，可以选择sqlite3数据中的历史记录进行导出，会自动在本地生成一个导出的文件。
