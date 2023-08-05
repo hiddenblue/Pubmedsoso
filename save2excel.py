@@ -4,6 +4,7 @@ from time import sleep
 import os
 
 import xlwt
+import sys
 
 
 def save2excel(dbpath):
@@ -82,14 +83,14 @@ if __name__ == "__main__":
     if tablelist == None:
         print("目标数据库不存在或者内容为空，请检查数据库，即将退出")
         sleep(1)
-        exit()
+        sys.exit(-1)
     print("\n")
     x = 99
     while x != 0:
         sleep(0.5)
         print("当前目录数据库中含有以下table(数据表格)pubmed后面的数字为生成时精确到秒的时间\n", '----' * 20, '\n')
         for i in range(len(tablelist)):
-            print("[%d]%s  " % (i + 1, tablelist[i]), end='')
+            print("[%d]%s  " % (i + 1, tablelist[i]))
         print("\n")
         print('----' * 20)
         try:
