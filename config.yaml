@@ -1,5 +1,6 @@
 #这个文件里保存了pubmedsoso的配置文件，global影响两种模式下的参数，默认值可以修改
 global_params:
+  debug: false
   sql_path: "."
   excel_path: "."
   doc_down_path: "./document/pub"
