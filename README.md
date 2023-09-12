@@ -32,6 +32,41 @@ eventlet
 
 xlwt==1.3.0
 
+## 结构及流程图
+
+```mermaid
+---
+title:pubmedsoso 执行流程图
+---
+flowchart
+    subgraph Log mod
+        direction LR
+            G[LoggingDemo] --> C[pubmedsoso.py]
+    end
+
+    H[USER] ---> |python main.py| A[main.py]
+
+    subgraph Arg mod
+        direction RL
+            A[main.py] --> |command start| B[argparseer.py]
+            B[argparseer.py] -->|args| A[main.py]
+    end
+
+    A-->|args| C[pubmedsoso.py]
+    C --> D{script mode?}
+    D -->|YES| E[Config]
+    D -->|NO| F{args or cmd?}
+    F -->|YES| J[use args init pubmesoso]
+    F -->|NO| K[cmd_arg_input]
+	
+    subgraph DIR_init mod
+            direction RL
+            E[Config] --> N[DIR_init]
+            J[args init pubmesoso] --> N[DIR_init]
+            K[cmd_arg_input] --> N[DIR_init]
+    end
+```
+
 ## 模块介绍：
 
 main.py文件是整个项目运行的主要文件
