@@ -1,6 +1,6 @@
 import typing
 import logging
-from LoggingDemo import MyLogger
+from LoggingMOD import MyLogger
 logger = MyLogger("Myapp", logging.DEBUG)
 from time import sleep
 import yaml
@@ -21,8 +21,8 @@ class BaseInit:
 
         # 全局参数初始化，太多就不挨个初始化了，全整进去得了
         try:
-            for key,values in self.config_yaml['global_params']:
-                self.config.key = values
+            for key,value in self.config_yaml['global_params'].items():
+                setattr(self.config, key, value)
         except KeyError as e:
             logging.error(f'unable to load the global params from config path: {config_file_path}, error: {e}')
             logging.error(f'the program will exit soon')
@@ -30,8 +30,8 @@ class BaseInit:
 
         # command 模式专用参数
         try:
-            for key,values in self.config_yaml['command_mode_args']:
-                self.config.key = values
+            for key,value in self.config_yaml['command_mode_args'].items():
+                setattr(self.config, key, value)
         except KeyError as e:
             logging.error(f'unable to load the command params from config path: {config_file_path}, error: {e}')
             logging.error(f'the program will exit soon')
@@ -68,7 +68,7 @@ class ScriptInit(BaseInit):
     def __init__(self, config_file_path):
 
         ## 在BaseInit的基础上我加上了script模式特有的config_file_path
-        super(BaseInit, self).__init__(config_file_path)
+        super().__init__(config_file_path)
         try:
             if self.config_yaml['exec_mode'] == 'script':
                 self.config.exec_mode = self.config_yaml['exec_mode']
@@ -85,11 +85,10 @@ class ArgsInit(BaseInit):
     通过继承了BaseInit的属性，加上了Args特有的属性即可。
     """
     def __init__(self, command_args, config_file_path):
-        super(BaseInit, self).__init__(config_file_path)
+        super().__init__(config_file_path)
         try:
-            if command_args.script:
-                for key, values in command_args.items():
-                    self.config.key= values
+            for key, value in command_args.__dict__.items():
+                setattr(self.config, key, value)
         except KeyError as e:
             logging.error(f'ArgsInit error: {e}')
             exit(-1)
@@ -99,7 +98,7 @@ class CMDInit(BaseInit):
     这部分需要后期完成了，先闲置
     """
     def __init__(self, config_file_path):
-        super(BaseInit, self).__init__(config_file_path)
+        super().__init__(config_file_path)
         while(True):
             self.config.keyword = str(input("请在下面粘贴你构建的搜索结果的parameter\n"))
 
@@ -114,7 +113,7 @@ class CMDInit(BaseInit):
                 print(e)
                 print("输入有误\n")
                 continue
-            self.config.pagenum = page_num
+            self.config.page_num = page_num
             sleep(1)
 
             download_num =input("请输入你想下载的文献的数量\n")
@@ -134,40 +133,42 @@ class Config:
     增减后期功能和对应的数据结构
     """
     def __init__(self):
-        pass
+        self.config = { 'keyword': "", 'page_num': None, 'download_num': None,
+                        'is_debug': False, 'default_name': "", 'output_path': "",
+                        "excel_output": True, 'exec_mode': "", "test_arg": None}
 
     @property
     def keyword(self):
-        return self.keyword
+        return self.config['keyword']
 
     @keyword.setter
     def keyword(self, keyword):
-        self.keyword = keyword
+        self.config['keyword'] = keyword
 
     @keyword.deleter
     def keyword(self):
         raise RuntimeError('can not delete keyword')
 ##########################################################
     @property
-    def pagenum(self):
-        return self.pagenum
+    def page_num(self):
+        return self.config['page_num']
 
-    @pagenum.setter
-    def pagenum(self, pagenum):
-        self.pagenum = pagenum
+    @page_num.setter
+    def page_num(self, page_num:int):
+        self.config['page_num'] = page_num
 
-    @pagenum.deleter
-    def pagenum(self):
-        raise RuntimeError('can not delete pagenum')
+    @page_num.deleter
+    def page_num(self):
+        raise RuntimeError('can not delete page_num')
 
     ##########################################################
     @property
     def download_num(self):
-        return self.download_num
+        return self.config["download_num"]
 
     @download_num.setter
     def download_num(self, download_num):
-        self.download_num = download_num
+        self.config["download_num"] = download_num
 
     @download_num.deleter
     def download_num(self):
@@ -176,11 +177,11 @@ class Config:
     ##########################################################
     @property
     def is_debug(self):
-        return self.is_debug
+        return self.config["is_debug"]
 
     @is_debug.setter
     def is_debug(self, is_debug):
-        self.is_debug = is_debug
+        self.config["is_debug"] = is_debug
 
     @is_debug.deleter
     def is_debug(self):
@@ -189,11 +190,11 @@ class Config:
     ##########################################################
     @property
     def default_name(self):
-        return self.default_name
+        return self.config["default_name"]
 
     @default_name.setter
     def default_name(self, default_name):
-        self.default_name = default_name
+        self.config["default_name"] = default_name
 
     @default_name.deleter
     def default_name(self):
@@ -202,11 +203,11 @@ class Config:
     ##########################################################
     @property
     def output_path(self):
-        return self.output_path
+        return self.config['output_path']
 
     @output_path.setter
     def output_path(self, output_path):
-        self.output_path = output_path
+        self.config['output_path'] = output_path
 
     @output_path.deleter
     def output_path(self):
@@ -214,11 +215,11 @@ class Config:
     ##########################################################
     @property
     def excel_output(self)-> bool:
-        return self.excel_output
+        return self.config["excel_output"]
 
     @excel_output.setter
     def excel_output(self, excel_output):
-        self.excel_output = excel_output
+        self.config["excel_output"] = excel_output
 
     @excel_output.deleter
     def excel_output(self):
@@ -227,12 +228,12 @@ class Config:
 ##########################################################
 
     @property
-    def exec_mode(self)-> bool:
-        return self.exec_mode
+    def exec_mode(self)-> str:
+        return self.config["exec_mode"]
 
     @exec_mode.setter
     def exec_mode(self, exec_mode):
-        self.exec_mode = exec_mode
+        self.config["exec_mode"] = exec_mode
 
     @exec_mode.deleter
     def exec_mode(self):
@@ -240,12 +241,12 @@ class Config:
     ##########################################################
 
     @property
-    def test_arg(self)-> bool:
-        return self.test_arg
+    def test_arg(self) ->any:
+        return self.config['test_arg']
 
     @test_arg.setter
     def test_arg(self, test_arg):
-        self.test_arg = test_arg
+        self.config['test_arg'] = test_arg
 
     @test_arg.deleter
     def test_arg(self):

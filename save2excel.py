@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
+import logging
 import sqlite3
 from time import sleep
 import os
+from sql import create_sql_conn
 
 import xlwt
+from LoggingMOD import MyLogger
+logger = MyLogger("myapp", log_level=logging.DEBUG)
 
 
 def save2excel(dbpath):
@@ -18,18 +22,18 @@ def save2excel(dbpath):
             exit(-1)
     tablename = 'pubmed%s' % savetime
     try:
-        try:
-            conn = sqlite3.connect(dbpath)
-            cursor = conn.cursor()
+        with create_sql_conn(dbpath) as cursor:
+            logger.info(f"connect to to target database:{dbpath}success!")
             sql = '''SELECT * FROM %s''' % tablename
-            cursor.execute(sql)
-            savedata = cursor.fetchall()
-            # print(savedata)
-            conn.commit()
-            cursor.close()
-            print("读取最终数据库信息成功")
-        except:
-            print("读取数据库生成excel时失败，请检查数据库")
+            try:
+                cursor.execute(sql)
+                savedata = cursor.fetchall()
+                logger.info("读取最终数据库信息成功")
+            except sqlite3.OperationalError as e:
+                logger.error(f"Error when execute sql: {sql} command: {e}")
+                logger.info(f"读取最终数据库：{dbpath} 信息失败")
+                exit(-1)
+
         workbook = xlwt.Workbook(encoding="utf-8", style_compression=0)
         worksheet = workbook.add_sheet("pumedsoso", cell_overwrite_ok=True)
         col = (
@@ -55,28 +59,23 @@ def save2excel(dbpath):
          print("爬取数据库信息保存到excel失败\n")
 
 def gettable(dbpath):
-    try:
-        conn = sqlite3.connect(dbpath)
-        cursor = conn.cursor()
-        cursor.execute("SELECT name from sqlite_master where type='table' order by name")
-        tablelist = cursor.fetchall()
-        conn.commit()
-        cursor.close()
-        for i in range(len(tablelist)):
-            tablelist[i] = tablelist[i][0]
-        del tablelist[-1]
-        return tablelist
-    except:
-        print("数据库查询出错，请检查数据库")
+    with create_sql_conn(dbpath) as cursor:
+        logger.info(f"gettable connect to to target database:{dbpath}success!")
+        sql = "SELECT name from sqlite_master where type='table' order by name"
+        try:
+            cursor.execute(sql)
+            tablelist = cursor.fetchall()
+        except sqlite3.OperationalError as e:
+            logger.error(f"Error when execute sql: {sql} command: {e}")
+            exit(-1)
+    for i in range(len(tablelist)):
+        tablelist[i] = tablelist[i][0]
+    del tablelist[-1]
+    return tablelist
 
 if __name__ == "__main__":
     global dbpath
     dbpath='pubmedsql'
-    # save2excel(dbpath)
-
-        # for i in range(len(result)):
-        #
-        #     time.sleep(random.randint(1,5))
 
     tablelist = gettable(dbpath)
     if tablelist == None:

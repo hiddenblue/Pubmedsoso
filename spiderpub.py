@@ -137,7 +137,7 @@ def createdb(dbpath: str):  # 创建一个数据库
     sql = '''
     create table %s
     (id  integer primary key autoincrement,
-    doctitle text,authorlist text,journal text,doi text,PMID numeric,PMCID numeric,abstract text,
+    doctitle text,authorlist text, journal text,doi text,PMID numeric,PMCID numeric,abstract text,
     keyword text,affiliations text,freemark numeric,reviewmark numeric,savepath text)''' % tablename
     conn = sqlite3.connect(dbpath)
     cursor = conn.cursor()
