@@ -1,76 +1,55 @@
 # -*- coding: utf-8 -*-
-import logging
 import random
 import re
 import sqlite3
 import time
+import urllib
+import urllib.error
+from urllib import request
 
-import requests
-
+import eventlet
 import xlwt
-from tqdm import tqdm
 
 from geteachinfo import readdata1
 from timevar import savetime
-from LoggingMOD import MyLogger
-logger = MyLogger("Myapp", logging.DEBUG)
-from individual_info import create_sql_conn
 
 
 # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9034016/pdf/main.pdf
-def getpdf(PMCID:str)->str:
-    baseurl = "https://www.ncbi.nlm.nih.gov/pmc/articles/"
-    ## main.pdf会发生一次跳转
+def downpdf(parameter):
+    eventlet.monkey_patch()
+    downpara = "pmc/articles/" + parameter + "/pdf/main.pdf"
     # openurl是用于使用指定的搜索parameter进行检索，以get的方式获取pubmed的搜索结果页面，返回成html文件
-    url = baseurl + PMCID + "/pdf/main.pdf"
+    baseurl = "https://www.ncbi.nlm.nih.gov/"
+    url = baseurl + downpara
     timeout_flag=0
-    headers = {
-        'DNT': '1',
-        'Upgrade-Insecure-Requests': '1',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.76',
-        'sec-ch-ua': '"Chromium";v="116", "Not)A;Brand";v="24", "Microsoft Edge";v="116"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"',
-    }
-    logger.info("Start downloading file")
+    header={"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36 Edg/101.0.1210.32"}
+    request=urllib.request.Request(url,headers=header)
+    html=""
+    # try:
+    #     response=urllib.request.urlopen(request,timeout=30)
+    #     html=response.read()
+    #     print("%s.pdf"%parameter,"从目标站获取pdf数据成功")
+    #     return html
     try:
-        res = requests.get(url=url, headers=headers, timeout=30, allow_redirects=True, stream=True)
-        total = int(res.headers.get('Content-Length', 0))
-        filename = res.headers.get("Content-Disposition", None)
-        if filename:
-            filename = filename[18:-1]
-        print(filename)
+        with eventlet.Timeout(180,True):
+            response = urllib.request.urlopen(request, timeout=60)
+            html = response.read()
+            print("%s.pdf" % parameter, "从目标站获取pdf数据成功")
+            return html
+    except urllib.error.URLError as e:
+        if hasattr(e, "code"):  # 判断e这个对象里面是否包含code这个属性
+            print(e.code)
+        if hasattr(e, "reason"):
+            print(e.reason)
+        timeout_flag=1
+        return timeout_flag
+    except eventlet.timeout.Timeout:
+        timeout_flag=1
+        print("下载目标数据超时")
+        return timeout_flag
+    except:
+        print("%s.pdf"%parameter,"从目标站获取pdf数据失败")
 
-        try:
-            # 利用tqdm实现的文件下载进度模块，看不懂是正常的。
-            with open(filename, 'wb') as file, tqdm(desc=filename, total=total,
-                                                    unit='iB', unit_scale=True,
-                                                    unit_divisor=1024,
-                                                    ) as bar:
-                for data in res.iter_content(chunk_size=1024):
-                    size = file.write(data)
-                    bar.update(size)
-            logger.info("current file download finished")
-            print("%s.pdf" % PMCID, "从目标站获取pdf数据成功")
-            return filename
-        except IOError as e:
-            logger.error(f" download file error:{e}")
-            return
-
-    except requests.exceptions.ProxyError as e:
-        print("%s.pdf" % PMCID, "从目标站获取pdf数据失败")
-        print(f'requests error: {e}, please check your proxy setting')
-        return
-    
-    except requests.exceptions.HTTPError as e:
-        print("%s.pdf" % PMCID, "从目标站获取pdf数据失败")
-        print(f'request connect error: {e}')
-        return
-        
-    except  requests.exceptions.Timeout as e:
-        print("%s.pdf" % PMCID, "从目标站获取pdf数据失败")
-        print(f'requests download error: {e}')
-        return
 
 def savepdf(html, PMCID, name, dbpath):
     tablename = 'pubmed%s' % savetime
@@ -86,22 +65,19 @@ def savepdf(html, PMCID, name, dbpath):
         file.close()
         # print("%s.pdf"%name,"文件写入到Pubmed/document/pub/下成功")
         print("pdf文件写入成功,文件ID为 %s" % PMCID, "保存路径为Pubmed/document/pub/")
-
-        with create_sql_conn(dbpath) as cursor:
-            logger.info(f"connect to to target database:{dbpath}success!")
-            sql = f" UPDATE {tablename} SET savepath = {savepath} WHERE PMCID ={PMCID}"
-
-            try:
-                cursor.execute(sql)
-                result = cursor.fetchall()
-                logger.info(f"pdf文件写入成功,文件ID为 {PMCID}", "地址写入到数据库pubmedsql下的table%s中成功" % tablename)
-            except sqlite3.OperationalError as e:
-                logger.error(f"Error when execute sql: {sql} command: {e}")
-                logger.error(f"pdf文件 {savepath}保存路径写入到数据库失败")
-                exit(-1)
-        print(result)
-    except IOError as e:
-        logger.error(f'{e}')
+        try:
+            conn = sqlite3.connect(dbpath)
+            cursor = conn.cursor()
+            cursor.execute(" UPDATE %s SET savepath = ? WHERE PMCID =?" % tablename,
+                           (savepath, PMCID))
+            conn.commit()
+            cursor.close()
+            return 'success'
+            print("pdf文件写入成功,文件ID为 %s"%PMCID,"地址写入到数据库pubmedsql下的table%s中成功"%tablename)
+        except:
+            print("pdf文件保存路径写入到数据库失败")
+    except:
+        print("pdf文件写入失败,文件ID为 %s"%PMCID,"文件写入失败,检查路径")
 
 def save2excel(dbpath):
     savepath='./pudmed-%s.xls'%savetime
@@ -155,7 +131,7 @@ def downpmc(limit):
             break
         print("开始下载第%d篇"%count)
         #result是从数据库获取的列表元组，其中的每一项构成为PMCID,doctitle
-        html=getpdf(item[0])
+        html=downpdf(item[0])
         if html==None:
             print("网页pdf数据不存在，自动跳过该文献 PMCID为 %s" % item[0])
             continue
