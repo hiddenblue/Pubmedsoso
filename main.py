@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
+import argparse
 import os
+import sys
 from time import sleep
 
 from downpmc import downpmc
 from geteachinfo import geteachinfo
 from spiderpub import spiderpub
 import urllib.parse
+from timevar import ProjectInfo
 
 class Search_param(str):
     """
@@ -35,46 +38,87 @@ class Search_param(str):
         """
         self.search_keywords[key] = value
 
-print('--' * 25, '\n')
-print("程序已运行，开始检查数据储存目录\n\n")
-print('--' * 25)
-sleep(1.5)
-if os.path.exists('./document'):
-    if os.path.exists('./document/pub'):
-        print("文件储存目录检查正常，可以储存文件\n")
+if __name__ == '__main__':
+    
+    parser = argparse.ArgumentParser(
+        description="pubmedsoso is python program for crawler article information and download pdf file",
+        usage="python main.py keyword ")
+
+    parser.add_argument('--version', '-v', action='version',
+                        version=f'\nCurrent the {ProjectInfo.ProjectName}\n\n version: {ProjectInfo.VersionInfo}\n' +
+                                f'Last updated date: {ProjectInfo.LastUpdate} \n' +
+                                f'Author: {ProjectInfo.AuthorName} \n',
+                        help='use --version to show the version')
+
+    source_group = parser.add_mutually_exclusive_group(required=False)  # True?
+
+    # source_group.add_argument("--script", '-s', action='store_true',
+    #                           help='add --script -s arg running script mode',
+    #                           default=False)
+
+    parser.add_argument("keyword", type=str,
+                        help='specify the keywords to search pubmed\n For example "headache"')
+
+
+    parser.add_argument("--page_num", "-n", type=int,
+                        help='add --number or -n to specify the page number you wanna to crawl'
+                             'For example --number 10. Default number is 10',
+                        default=10)
+
+    parser.add_argument("--download_num", "-d", type=int,
+                        help='add --download_num or -d to specify the doc number you wanna to download'
+                             'For example -d 10. Default number is 10',
+                        default=10)
+    ####################################################################################################
+
+    args = parser.parse_args()
+    print("\n\n")
+
+    if args.keyword.isspace() or args.keyword.isnumeric():
+        print("pubmedsoso search keyword error\n")
+        sleep(1.5)
+    
+    
+    print(f"当前使用的命令行参数 {args.__dict__}\n")
+    print(f"当前使用的命令行参数 搜索关键词: \"{args.keyword}\", 文献信息检索数量: {args.page_num}, 文献下载数量:{args.download_num}\n")
+    sleep(1.5)
+    
+    
+    print("是否要根据以上参数开始执行程序？y or n\n\n")
+    startFlag = input()
+    if startFlag == 'y' or startFlag == 'Y' or startFlag == 'Yes':
+        pass
+    if startFlag in ["n", "N", "No", "no"]:
+        print("程序终止执行\n\n")
+        sleep(1.5)
+        sys.exit()
+        
+    print('--' * 25, '\n')
+    print("程序已运行，开始检查数据储存目录\n")
+    print('--' * 25)
+    sleep(0.5)
+    if os.path.exists('./document'):
+        if os.path.exists('./document/pub'):
+            print("文件储存目录检查正常，可以储存文件\n")
+        else:
+            os.makedirs('./document/pub')
+            print("成功在当前目录下建立/document/pub文件夹\n")
     else:
         os.makedirs('./document/pub')
         print("成功在当前目录下建立/document/pub文件夹\n")
-else:
-    os.makedirs('./document/pub')
-    print("成功在当前目录下建立/document/pub文件夹\n")
-print('--'*25,'\n')
-print("document/pub目录检查完成，开始执行主程序\n")
-print('--'*25,'\n')
+    print('--'*25,'\n')
+    print("document/pub目录检查完成，开始执行主程序\n")
+    print('--'*25,'\n')
+    sleep(1.5)
 
-def main():
-    search_key = ""
-    while(search_key == ""):
-        search_key = str(input("请在下面你想要爬取的搜索关键词\n"))
-        sleep(1)
-        if search_key == '':
-            print("输入有误, 请重新输入\n")
-    num1 = int(input("即将爬取所有文献的信息，请输入你想爬取信息的页数(每页50个）\n"))
-    sleep(1)
-    if type(num1) != int:
-        print("输入有误\n")
-    limit = int(input("请输入爬取信息后你需要下载的文献数量\n"))
-    sleep(1)
+    dbpath = "./pubmedsql"
+    # ?term=cell%2Bblood&filter=datesearch.y_1&size=20
 
-    # 根据上面输入的关键词初始化生成url参数
-    search_param = Search_param(search_key)
 
-    spiderpub(search_param.gen_search_param(), num1)
+       # 根据上面输入的关键词初始化生成url参数
+    search_param = Search_param(args.keyword)
+
+    spiderpub(search_param.gen_search_param(), args.page_num)
     geteachinfo(dbpath)
-    downpmc(limit)
-
-
-dbpath = "./pubmedsql"
-main()
-# ?term=cell%2Bblood&filter=datesearch.y_1&size=20
-os.system("pause")
+    downpmc(args.download_num)
+    os.system("pause")
