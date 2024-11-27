@@ -63,7 +63,6 @@ optional arguments:
 --download_num, -d     add --download_num or -d to specify the number to download default 10
 
 ----
-image:assets/pic_save.png[Pubmedsoso, 600]
 
 _如果你熟悉IDE的话，可以在pycharm或者vscode等python环境下运行main.py_
 
@@ -96,6 +95,7 @@ image::assets/pic_save.png[Pubmedsoso]
 * [ ] 对非免费文献的scihub自动补全下载
 * [ ] 能用的gui界面
 * [ ] 最好附带一个免费的百度翻译插件，有时候大家可能用得上
+* [ ] 采用OOP和更加现代化的工具重构项目（进行ing）
 
 ---
 
