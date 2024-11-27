@@ -198,11 +198,12 @@ def savedata3(singleinfo: SingleDocInfo, dbpath: str):
     except sqlite3.Error as e:
         print(f"当前页面数据保存失败: {e}\n")
     finally:
+        if cursor:
+            cursor.close()
         if conn:
             conn.commit()
             conn.close()
-        if cursor:
-            cursor.close()
+
 
 
 def readdata1(dbpath, freemark):  # 读取数据库，返回想查询的文献的PMID
@@ -252,7 +253,8 @@ def geteachinfo(dbpath):
         singleDocInfo = get_single_info(PMID_list[i])
 
         savedata3(singleDocInfo, dbpath)
-        time.sleep(random.randint(0, 2))
+        # todo 异步执行提供速度
+        time.sleep(0.1)
 
 if __name__ == '__main__':
     PMID = "28233351"
