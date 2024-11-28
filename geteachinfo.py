@@ -1,19 +1,24 @@
 # -*- coding: utf-8 -*-
-import random
+import os
 import re
 import sqlite3
 import time
-from timevar import savetime
-
-import os
 from enum import Enum
 from typing import List, Optional
 
-from lxml import etree
 import requests
+from lxml import etree
+
+from DBHelper import DBReader, DBSaveInfo
+from timevar import savetime
 
 
 class SingleDocInfo:
+    """
+    SingleDocInfo 是一个用来表示通过单个文献打开页面获得的信息
+    非数据库当中包含完整属性的record
+    """
+
     def __init__(
             self,
             PMCID: str = "",
@@ -171,90 +176,54 @@ def get_single_info(PMID: str) -> SingleDocInfo:
         PMID=PMID,
     )
 
+from dataclasses import dataclass
 
-# print(getinfo(34794508))
 
-def savedata3(singleinfo: SingleDocInfo, dbpath: str):
+@dataclass
+class TempPMID:
+    PMCID: str
+    PMID: str
+    doctitle: str
+
+
+def readdata1(dbpath):  # 读取数据库，返回想查询的文献的PMID
     tablename = 'pubmed%s' % savetime
-    conn = None
-    cursor = None
+    print("tablename: %s", tablename)
+    ret = []
+
     try:
-        # Connect to the database
-        conn = sqlite3.connect(dbpath)
-        cursor = conn.cursor()
-
-        # Prepare the data
-        pmcid = singleinfo.PMCID
-        abstract_str = singleinfo.abstract.to_complete_abs()
-        affiliations_str = '\n'.join(singleinfo.affiliations)
-        keyword = singleinfo.keyword
-        pmid = singleinfo.PMID
-
-        # Execute the update statement
-        cursor.execute(f"UPDATE {tablename} SET PMCID = ?, abstract = ?, affiliations = ?, keyword = ? WHERE PMID = ?",
-                       (pmcid, abstract_str, affiliations_str, keyword, pmid))
-        print(f"单个页面数据写入成功 对应PMID为{pmid}\n")
+        sql = "SELECT PMCID, PMID, doctitle FROM %s WHERE freemark = '2'" % tablename
+        # 根据设置的freemark参数，查找数据库文献的信息,free = 1用于查找所有免费文献用来下载，而free = 2用于拿数据所有文献去获得详细信息
+        print(sql)
+        ret = DBReader(dbpath, sql)
+        for i in range(len(ret)):
+            ret[i] = TempPMID(ret[i][0], ret[i][1], ret[i][2])
+        print(ret)
+        print('读取sql信息成功 数据类型为PMCID和doctitle\n')
+        return ret
 
     except sqlite3.Error as e:
-        print(f"当前页面数据保存失败: {e}\n")
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.commit()
-            conn.close()
+        print("sqlite3 error: %s\n", e)
+        return []
 
-
-
-def readdata1(dbpath, freemark):  # 读取数据库，返回想查询的文献的PMID
-    tablename = 'pubmed%s' % savetime
-    print(tablename)
-    try:
-        conn = sqlite3.connect(dbpath)
-        cursor = conn.cursor()
-        try:
-
-            if freemark == 1:
-                sql = "SELECT PMCID,doctitle FROM %s WHERE freemark = '2'" % tablename
-                # 根据设置的freemark参数，查找数据库文献的信息,free = 1用于查找所有免费文献用来下载，而free = 2用于拿数据所有文献去获得详细信息
-                print(sql)
-                cursor.execute(sql)
-                print("sql执行成功\n")
-                result = cursor.fetchall()
-                print(result)
-                print('读取sql信息成功 数据类型为PMCID和doctitle\n')
-                return result
-            elif freemark == 0:
-                sql = "SELECT PMID FROM %s" % tablename  # 查找数据库文献的信息
-                cursor.execute(sql)
-                result = cursor.fetchall()
-                for i in range(len(result)):
-                    result[i] = result[i][0]
-                print(result)
-                print('读取sql信息成功，数据类型为PMID\n')
-                return result
-
-        except:
-            print("目标数据库读取失败\n")
-        finally:
-            conn.commit()
-            cursor.close()
-    except:
-        print("连接数据库失败，请检查目标数据库\n")
+    except Exception as e:
+        print("连接数据库失败，请检查目标数据库: %s\n", e)
+        return []
 
 
 def geteachinfo(dbpath):
     tablename = 'pubmed%s' % savetime
     print('PyCharm\n')
-    PMID_list = readdata1(dbpath, 0)
+    PMID_list = readdata1(dbpath)
     if PMID_list == None:
         print("数据库读取出错，内容为空\n")
     for i in range(len(PMID_list)):
-        singleDocInfo = get_single_info(PMID_list[i])
+        singleDocInfo = get_single_info(PMID_list[i].PMID)
 
-        savedata3(singleDocInfo, dbpath)
+        DBSaveInfo(singleDocInfo, dbpath)
         # todo 异步执行提供速度
         time.sleep(0.1)
+
 
 if __name__ == '__main__':
     PMID = "28233351"
