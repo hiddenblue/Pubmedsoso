@@ -1,10 +1,13 @@
+import random
 import re
+import time
 
 import requests
 from requests.exceptions import HTTPError, ConnectionError, ProxyError, ConnectTimeout
 
 from DBHelper import DBWriter
-from geteachinfo import TempPMID
+from ExcelHelper import ExcelHelper
+from geteachinfo import TempPMID, readdata1
 from timevar import savetime
 
 
@@ -38,16 +41,49 @@ class PDFHelper:
         print("Error occured: %s" % e)
 
     @classmethod
+    def PDFDonwloadEntry(cls, limit):
+        tablename = 'pubmed%s' % savetime
+        count = 0
+        dbpath = 'pubmedsql'
+        PMID_list: [TempPMID] = readdata1(dbpath)
+
+        PMCID_list = [item for item in PMID_list if item.PMCID != None]
+        for item in PMCID_list:
+            count += 1
+
+            if count > limit:
+                print("已达到需要下载的上限，下载停止\n")
+                break
+            print("开始下载第%d篇" % count)
+            # result是从数据库获取的列表元组，其中的每一项构成为PMCID,doctitle
+            html = PDFHelper.PDFdownload(item.PMCID)
+            if html == None:
+                print("网页pdf数据不存在，自动跳过该文献 PMCID为 %s" % item.PMCID)
+                continue
+            elif html == 1:
+                print("30s超时,自动跳过该文献 PMCID为 %s" % item.PMCID)
+                continue
+            status = PDFHelper.PDFSave(html, item, dbpath)
+            if status == None:
+                print("保存pdf文件发生错误，自动跳过该文献PMCID为 %s" % item.PMCID)
+                continue
+            time.sleep(random.randint(0, 1))
+        ExcelHelper.ToExcel(dbpath)  # 这里我把默认的数据库路径改成了全局变量dbpath
+        print("爬取最终结果信息已经自动保存到excel表格中，文件名为%s" % tablename)
+        print("爬取的所有文献已经保存到/document/pub/目录下")
+        print("爬取程序已经执行完成，自动退出, 哈哈，no errors no warning")
+
+    @classmethod
     def PDFdownload(cls, PMCID):
 
         # eventlet.monkey_patch()
-        donwloadUrl = cls.baseurl + "pmc/articles/" + PMCID + "/pdf/main.pdf"
+        downloadUrl = cls.baseurl + "pmc/articles/" + PMCID + "/pdf/main.pdf"
 
         pdf_content = ""
 
         try:
-            response = requests.get(donwloadUrl, headers=cls.headers, timeout=30)
-            if (response.status_code == 200):
+            response = requests.get(downloadUrl, headers=cls.headers, timeout=30)
+            if response.status_code == 200:
                 pdf_content = response.content
                 print("%s.pdf" % PMCID, "从目标站获取pdf数据成功")
             return pdf_content
@@ -77,6 +113,7 @@ class PDFHelper:
             file.close()
             # print("%s.pdf"%name,"文件写入到Pubmed/document/pub/下成功")
             print("pdf文件写入成功,文件ID为 %s" % tempid.PMCID, "保存路径为Pubmed/document/pub/")
+            # 将pdf文件名称以及存储位置等相关信息添加到sqlite数据库当中
             try:
                 writeSql = " UPDATE %s SET savepath = ? WHERE PMCID =?" % tablename
                 param = (savepath, tempid.PMCID)

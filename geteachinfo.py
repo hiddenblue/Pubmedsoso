@@ -3,82 +3,13 @@ import os
 import re
 import sqlite3
 import time
-from enum import Enum
 from typing import List, Optional
-
-import requests
 from lxml import etree
 
 from DBHelper import DBReader, DBSaveInfo
 from timevar import savetime
-
-
-class SingleDocInfo:
-    """
-    SingleDocInfo 是一个用来表示通过单个文献打开页面获得的信息
-    非数据库当中包含完整属性的record
-    """
-
-    def __init__(
-            self,
-            PMCID: str = "",
-            abstract: Optional['Abstract'] = None,
-            affiliations: Optional[List[str]] = None,
-            keyword: str = "",
-            PMID: str = "",
-    ):
-        self.PMCID = PMCID
-        self.abstract = abstract if abstract else Abstract()
-        self.affiliations = affiliations if affiliations else []
-        self.keyword = keyword
-        self.PMID = PMID
-
-
-class ABS_PartEnumType(Enum):
-    Background = "Background"
-    Methods = "Methods"
-    Results = "Results"
-    Conclusions = "Conclusions"
-    Registration = "Registration"
-    Keywords = "Keywords"
-
-
-class Abstract:
-    def __init__(
-            self,
-            background: str = "",
-            methods: str = "",
-            results: str = "",
-            conclusions: str = "",
-            registration: str = "",
-            keywords: str = "",
-    ):
-        self.background = background
-        self.methods = methods
-        self.results = results
-        self.conclusions = conclusions
-        self.registration = registration
-        self.keywords = keywords
-
-    def to_complete_abs(self) -> str:
-        """
-        输出一个格式化后的完整摘要
-        """
-        parts = []
-        if self.background:
-            parts.append(f"Background: {self.background.strip()}")
-        if self.methods:
-            parts.append(f"Methods: {self.methods.strip()}")
-        if self.results:
-            parts.append(f"Results: {self.results.strip()}")
-        if self.conclusions:
-            parts.append(f"Conclusions: {self.conclusions.strip()}")
-        if self.registration:
-            parts.append(f"Registration: {self.registration.strip()}")
-        if self.keywords:
-            parts.append(f"Keywords: {self.keywords.strip()}")
-        return "\n".join(parts)
-
+from WebHelper import WebHelper
+from DataType import ABS_PartEnumType, SingleDocInfo,Abstract
 
 def parse_abstract(
         abstract_chunk: List[etree.Element],
@@ -104,16 +35,10 @@ def parse_abstract(
 
 
 def get_single_info(PMID: str) -> SingleDocInfo:
-    base_url = "https://pubmed.ncbi.nlm.nih.gov/"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36 Edg/101.0.1210.32"
-    }
-
-    request_url = f"{base_url}{PMID}"
+    
     try:
-        response = requests.get(request_url, headers=headers)
-        response.raise_for_status()
-    except requests.exceptions.RequestException as e:
+        response = WebHelper.GetHTML(PMID)
+    except Exception as e:
         print(f"请求失败: {e}")
         return SingleDocInfo()
 

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import time
 savetime = time.strftime("%Y%m%d%H%M%S")
+feedbacktime = 1.5
 
 
 class ProjectInfo:

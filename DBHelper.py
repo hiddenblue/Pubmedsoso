@@ -1,7 +1,7 @@
 import sqlite3
 from dataclasses import dataclass
 
-from geteachinfo import SingleDocInfo
+from DataType import SingleDocInfo
 from timevar import savetime
 
 
@@ -10,7 +10,6 @@ from timevar import savetime
 @dataclass
 class Publication:
     doctitle: str
-    title: str
     authorlist: str
     journal: str
     year: str
@@ -81,8 +80,10 @@ def DBTableCreater(dbpath: str, tablename: str) -> bool:
     CREATE TABLE {tablename} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         doctitle TEXT,
-        authorlist TEXT,
-        journal TEXT,
+        full_author TEXT,
+        short_author TEXT,
+        full_journal TEXT,
+        short_journal TEXT,
         doi TEXT,
         PMID NUMERIC,
         PMCID NUMERIC,
@@ -111,6 +112,23 @@ def DBTableCreater(dbpath: str, tablename: str) -> bool:
     except Exception as e:
         print(f"createtable General Error: {e}\n")
         return False
+    
+    
+def DBTableFinder(dbpath: str) -> list:
+
+    try:
+        readSql = "SELECT name from sqlite_master where type='table' order by name"
+        tablelist = DBReader(dbpath, readSql)
+        for i in range(len(tablelist)):
+            tablelist[i] = tablelist[i][0]
+        del tablelist[-1]
+        return tablelist
+
+    except sqlite3.Error as e:
+        print("sqlite3 error: %s\n", e)
+
+    except Exception as e:
+        print("数据库查询出错，请检查数据库: %s", e)
 
 
 def DBReader(dbpath: str, sql: str) -> list:

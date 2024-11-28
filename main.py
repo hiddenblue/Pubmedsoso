@@ -4,11 +4,11 @@ import os
 import sys
 from time import sleep
 
-from downpmc import downpmc
 from geteachinfo import geteachinfo
 from spiderpub import spiderpub
 import urllib.parse
-from timevar import ProjectInfo
+from timevar import ProjectInfo, feedbacktime
+from PDFHelper import PDFHelper
 
 class Search_param(str):
     """
@@ -76,12 +76,12 @@ if __name__ == '__main__':
 
     if args.keyword.isspace() or args.keyword.isnumeric():
         print("pubmedsoso search keyword error\n")
-        sleep(1.5)
+        sleep(feedbacktime)
     
     
     print(f"当前使用的命令行参数 {args.__dict__}\n")
     print(f"当前使用的命令行参数 搜索关键词: \"{args.keyword}\", 文献信息检索数量: {args.page_num}, 文献下载数量:{args.download_num}\n")
-    sleep(1.5)
+    sleep(feedbacktime)
     
     
     print("是否要根据以上参数开始执行程序？y or n\n\n")
@@ -90,7 +90,7 @@ if __name__ == '__main__':
         pass
     if startFlag in ["n", "N", "No", "no"]:
         print("程序终止执行\n\n")
-        sleep(1.5)
+        sleep(feedbacktime)
         sys.exit()
         
     print('--' * 25, '\n')
@@ -109,7 +109,7 @@ if __name__ == '__main__':
     print('--'*25,'\n')
     print("document/pub目录检查完成，开始执行主程序\n")
     print('--'*25,'\n')
-    sleep(1.5)
+    sleep(feedbacktime)
 
     dbpath = "./pubmedsql"
     # ?term=cell%2Bblood&filter=datesearch.y_1&size=20
@@ -120,5 +120,5 @@ if __name__ == '__main__':
 
     spiderpub(search_param.gen_search_param(), args.page_num)
     geteachinfo(dbpath)
-    downpmc(args.download_num)
+    PDFHelper.PDFDonwloadEntry(args.download_num)
     os.system("pause")
