@@ -3,84 +3,15 @@ import random
 import re
 import sqlite3
 import time
-import urllib
-import urllib.error
-from urllib import request
 
-import eventlet
 import xlwt
 
-from geteachinfo import readdata1
+from geteachinfo import readdata1, TempPMID
 from timevar import savetime
-
-
-# https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9034016/pdf/main.pdf
-def downpdf(parameter):
-    eventlet.monkey_patch()
-    downpara = "pmc/articles/" + parameter + "/pdf/main.pdf"
-    # openurl是用于使用指定的搜索parameter进行检索，以get的方式获取pubmed的搜索结果页面，返回成html文件
-    baseurl = "https://www.ncbi.nlm.nih.gov/"
-    url = baseurl + downpara
-    timeout_flag=0
-    header={"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36 Edg/101.0.1210.32"}
-    request=urllib.request.Request(url,headers=header)
-    html=""
-    # try:
-    #     response=urllib.request.urlopen(request,timeout=30)
-    #     html=response.read()
-    #     print("%s.pdf"%parameter,"从目标站获取pdf数据成功")
-    #     return html
-    try:
-        with eventlet.Timeout(180,True):
-            response = urllib.request.urlopen(request, timeout=60)
-            html = response.read()
-            print("%s.pdf" % parameter, "从目标站获取pdf数据成功")
-            return html
-    except urllib.error.URLError as e:
-        if hasattr(e, "code"):  # 判断e这个对象里面是否包含code这个属性
-            print(e.code)
-        if hasattr(e, "reason"):
-            print(e.reason)
-        timeout_flag=1
-        return timeout_flag
-    except eventlet.timeout.Timeout:
-        timeout_flag=1
-        print("下载目标数据超时")
-        return timeout_flag
-    except:
-        print("%s.pdf"%parameter,"从目标站获取pdf数据失败")
-
-
-def savepdf(html, PMCID, name, dbpath):
-    tablename = 'pubmed%s' % savetime
-    # pdf = html.decode("utf-8")  # 使用Unicode8对二进制网页进行解码，直接写入文件就不需要解码了
-
-    try:
-        name = re.sub(r'[< > / \\ | : " * ?]', ' ', name)
-        # 需要注意的是文件命名中不能含有以上特殊符号，只能去除掉
-        savepath = "./document/pub/%s.pdf" % name
-        file = open(savepath, 'wb')
-        print("open success")
-        file.write(html)
-        file.close()
-        # print("%s.pdf"%name,"文件写入到Pubmed/document/pub/下成功")
-        print("pdf文件写入成功,文件ID为 %s" % PMCID, "保存路径为Pubmed/document/pub/")
-        try:
-            conn = sqlite3.connect(dbpath)
-            cursor = conn.cursor()
-            cursor.execute(" UPDATE %s SET savepath = ? WHERE PMCID =?" % tablename,
-                           (savepath, PMCID))
-            conn.commit()
-            cursor.close()
-            return 'success'
-            print("pdf文件写入成功,文件ID为 %s"%PMCID,"地址写入到数据库pubmedsql下的table%s中成功"%tablename)
-        except:
-            print("pdf文件保存路径写入到数据库失败")
-    except:
-        print("pdf文件写入失败,文件ID为 %s"%PMCID,"文件写入失败,检查路径")
+from PDFHelper import PDFHelper
 
 def save2excel(dbpath):
-    savepath='./pudmed-%s.xls'%savetime
+    savepath = './pudmed-%s.xls' % savetime
     tablename = 'pubmed%s' % savetime
     try:
         try:
@@ -98,7 +29,8 @@ def save2excel(dbpath):
         workbook = xlwt.Workbook(encoding="utf-8", style_compression=0)
         worksheet = workbook.add_sheet("pumedsoso", cell_overwrite_ok=True)
         col = (
-        '序号', '文献标题', '作者名单', '期刊年份', 'doi', 'PMID', 'PMCID', '摘要', '关键词', '作者单位', '是否有免费全文', '是否是review', '保存路径')
+            '序号', '文献标题', '作者名单', '期刊年份', 'doi', 'PMID', 'PMCID', '摘要', '关键词', '作者单位',
+            '是否有免费全文', '是否是review', '保存路径')
         for i in range(len(col)):
             worksheet.write(0, i, col[i])
         for i in range(len(savedata)):
@@ -115,32 +47,34 @@ def save2excel(dbpath):
         workbook.save(savepath)
         print("\n爬取数据库信息保存到excel成功\n")
     except:
-         print("\n爬取数据库信息保存到excel失败\n")
+        print("\n爬取数据库信息保存到excel失败\n")
 
 
 def downpmc(limit):
-    tablename = 'pubmed%s'%savetime
-    count=0
+    tablename = 'pubmed%s' % savetime
+    count = 0
     dbpath = 'pubmedsql'
-    result = readdata1(dbpath, 1)
-    for item in result:
-        count+=1
+    PMID_list: [TempPMID] = readdata1(dbpath)
+
+    PMCID_list = [item for item in PMID_list if item.PMCID != None]
+    for item in PMCID_list:
+        count += 1
 
         if count > limit:
             print("已达到需要下载的上限，下载停止\n")
             break
-        print("开始下载第%d篇"%count)
-        #result是从数据库获取的列表元组，其中的每一项构成为PMCID,doctitle
-        html=downpdf(item[0])
-        if html==None:
-            print("网页pdf数据不存在，自动跳过该文献 PMCID为 %s" % item[0])
+        print("开始下载第%d篇" % count)
+        # result是从数据库获取的列表元组，其中的每一项构成为PMCID,doctitle
+        html = PDFHelper.PDFdownload(item.PMCID)
+        if html == None:
+            print("网页pdf数据不存在，自动跳过该文献 PMCID为 %s" % item.PMCID)
             continue
         elif html == 1:
-            print("30s超时,自动跳过该文献 PMCID为 %s" % item[0])
+            print("30s超时,自动跳过该文献 PMCID为 %s" % item.PMCID)
             continue
-        status = savepdf(html, item[0], item[1], dbpath)
+        status = PDFHelper.PDFSave(html, item.PMCID, item.doctitle, dbpath)
         if status == None:
-            print("保存pdf文件发生错误，自动跳过该文献PMCID为 %s" % item[0])
+            print("保存pdf文件发生错误，自动跳过该文献PMCID为 %s" % item.PMCID)
             continue
         time.sleep(random.randint(0, 1))
     save2excel(dbpath)  # 这里我把默认的数据库路径改成了全局变量dbpath
