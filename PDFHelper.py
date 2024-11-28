@@ -68,7 +68,7 @@ class PDFHelper:
                 print("保存pdf文件发生错误，自动跳过该文献PMCID为 %s" % item.PMCID)
                 continue
             time.sleep(random.randint(0, 1))
-        ExcelHelper.ToExcel(dbpath)  # 这里我把默认的数据库路径改成了全局变量dbpath
+        ExcelHelper.to_excel(dbpath)  # 这里我把默认的数据库路径改成了全局变量dbpath
         print("爬取最终结果信息已经自动保存到excel表格中，文件名为%s" % tablename)
         print("爬取的所有文献已经保存到/document/pub/目录下")
         print("爬取程序已经执行完成，自动退出, 哈哈，no errors no warning")
