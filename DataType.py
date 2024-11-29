@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, List, Union
+from typing import Optional, List
+
 
 class ABS_PartEnumType(Enum):
     Background = "Background"
@@ -10,10 +11,17 @@ class ABS_PartEnumType(Enum):
     Registration = "Registration"
     Keywords = "Keywords"
 
+
 class ArticleFreeType(Enum):
     NoneFreeArticle = 0
     FreeArticle = 1
     FreePMCArticle = 2
+
+@dataclass
+class TempPMID:
+    PMCID: str
+    PMID: str
+    doctitle: str
 
 @dataclass
 class SingleSearchData:
@@ -33,21 +41,22 @@ class SingleSearchData:
         """
         将所有字段用空格连接成一个字符串
         """
-        return ' '.join([
-            self.doctitle,
-            self.short_author,
-            self.full_author,
-            self.short_journal,
-            self.full_journal,
-            self.PMID,
-            str(self.freemark.value),
-            str(self.reviewmark)
-        ])
+        return ' '.join([            self.doctitle,
+                                     self.short_author,
+                                     self.full_author,
+                                     self.short_journal,
+                                     self.full_journal,
+                                     self.PMID,
+                                     str(self.freemark.value),
+                                     str(self.reviewmark)]
+        )
+
 
 class SingleDocInfo:
     """
     表示通过单个文献打开页面获得的信息，非数据库中包含完整属性的记录
     """
+
     def __init__(
             self,
             PMCID: str = "",
@@ -61,6 +70,7 @@ class SingleDocInfo:
         self.affiliations = affiliations if affiliations else []
         self.keyword = keyword
         self.PMID = PMID
+
 
 class Abstract:
     def __init__(
@@ -97,3 +107,50 @@ class Abstract:
         if self.keywords:
             parts.append(f"Keywords: {self.keywords.strip()}")
         return "\n".join(parts)
+
+
+@dataclass
+class Publication:
+    """
+    这个类将数据库里面所有的数据整合成了一个大的类
+    
+    """
+    doctitle: str
+    short_author: str
+    full_author: str
+    short_journal: str
+    full_journal: str
+    doi: str
+    pmid: str
+    pmcid: str
+    abstract: str
+    keyword: str
+    affiliations: str
+    freemark: str
+    reviewmark: bool
+    savepath: str
+
+    def __repr__(self) -> str:
+        return (f"Publication(doctitle='{self.doctitle}', short_author='{self.short_author}', "
+                f"full_author='{self.full_author}', short_journal='{self.short_journal}', "
+                f"full_journal='{self.full_journal}', doi='{self.doi}', pmid={self.pmid}, pmcid='{self.pmcid}', "
+                f"abstract='{self.abstract}', keyword='{self.keyword}', affiliations='{self.affiliations}', "
+                f"freemark={self.freemark}, reviewmark={self.reviewmark}, savepath='{self.savepath}')")
+
+    def to_dict(self) -> dict:
+        return {
+            "doctitle": self.doctitle,
+            "short_author": self.short_author,
+            "full_author": self.full_author,
+            "short_journal": self.short_journal,
+            "full_journal": self.full_journal,
+            "doi": self.doi,
+            "pmid": self.pmid,
+            "pmcid": self.pmcid,
+            "abstract": self.abstract,
+            "keyword": self.keyword,
+            "affiliations": self.affiliations,
+            "freemark": self.freemark,
+            "reviewmark": self.reviewmark,
+            "savepath": self.savepath
+        }

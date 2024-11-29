@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
 import os
 import re
-import sqlite3
 import time
-from typing import List, Optional
+from typing import List
+
 from lxml import etree
 
-from DBHelper import DBReader, DBSaveInfo
-from timevar import savetime
+from DBHelper import DBSaveInfo, DBFetchAllPMID
+from DataType import ABS_PartEnumType, SingleDocInfo, Abstract
+from ExcelHelper import ExcelHelper
 from WebHelper import WebHelper
-from DataType import ABS_PartEnumType, SingleDocInfo,Abstract
+from timevar import savetime
+from LogHelper import print_error
+
 
 def parse_abstract(
         abstract_chunk: List[etree.Element],
@@ -35,18 +38,16 @@ def parse_abstract(
 
 
 def get_single_info(PMID: str) -> SingleDocInfo:
-    
     try:
-        response = WebHelper.GetHTML(PMID)
+        html = WebHelper.GetHTML(PMID)
     except Exception as e:
-        print(f"请求失败: {e}")
+        print_error(f"请求失败: {e}")
         return SingleDocInfo()
 
     if os.getenv("DEBUG"):
         parser = etree.HTMLParser()
         html_etree = etree.parse("./Pubmed2.html", parser)
     else:
-        html = response.content.decode("utf-8")
         html_etree = etree.HTML(html)
 
     # 提取PMCID和DOI
@@ -82,6 +83,8 @@ def get_single_info(PMID: str) -> SingleDocInfo:
     conclusions = parse_abstract(abstract_chunk, ABS_PartEnumType.Conclusions)
     registration = parse_abstract(abstract_chunk, ABS_PartEnumType.Registration)
     keywords = parse_abstract(abstract_chunk, ABS_PartEnumType.Keywords)
+    
+    print("爬取单页信息成功，当前pmid为：", PMID)
 
     # 创建Abstract实例
     abstract_obj = Abstract(
@@ -101,45 +104,11 @@ def get_single_info(PMID: str) -> SingleDocInfo:
         PMID=PMID,
     )
 
-from dataclasses import dataclass
-
-
-@dataclass
-class TempPMID:
-    PMCID: str
-    PMID: str
-    doctitle: str
-
-
-def readdata1(dbpath):  # 读取数据库，返回想查询的文献的PMID
-    tablename = 'pubmed%s' % savetime
-    print("tablename: %s", tablename)
-    ret = []
-
-    try:
-        sql = "SELECT PMCID, PMID, doctitle FROM %s WHERE freemark = '2'" % tablename
-        # 根据设置的freemark参数，查找数据库文献的信息,free = 1用于查找所有免费文献用来下载，而free = 2用于拿数据所有文献去获得详细信息
-        print(sql)
-        ret = DBReader(dbpath, sql)
-        for i in range(len(ret)):
-            ret[i] = TempPMID(ret[i][0], ret[i][1], ret[i][2])
-        print(ret)
-        print('读取sql信息成功 数据类型为PMCID和doctitle\n')
-        return ret
-
-    except sqlite3.Error as e:
-        print("sqlite3 error: %s\n", e)
-        return []
-
-    except Exception as e:
-        print("连接数据库失败，请检查目标数据库: %s\n", e)
-        return []
-
 
 def geteachinfo(dbpath):
     tablename = 'pubmed%s' % savetime
-    print('PyCharm\n')
-    PMID_list = readdata1(dbpath)
+
+    PMID_list = DBFetchAllPMID(dbpath, tablename)
     if PMID_list == None:
         print("数据库读取出错，内容为空\n")
     for i in range(len(PMID_list)):
@@ -148,6 +117,7 @@ def geteachinfo(dbpath):
         DBSaveInfo(singleDocInfo, dbpath)
         # todo 异步执行提供速度
         time.sleep(0.1)
+    ExcelHelper.to_excel(dbpath)
 
 
 if __name__ == '__main__':

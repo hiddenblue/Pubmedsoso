@@ -1,14 +1,17 @@
 import random
 import re
 import time
+from typing import Optional
+from pathlib import Path
 
 import requests
 from requests.exceptions import HTTPError, ConnectionError, ProxyError, ConnectTimeout
 
-from DBHelper import DBWriter
+from DBHelper import DBWriter, DBFetchAllPMID
 from ExcelHelper import ExcelHelper
-from geteachinfo import TempPMID, readdata1
+from DataType import TempPMID
 from timevar import savetime
+from LogHelper import print_error
 
 
 # 把一些关于PDF相关的操作抽象出来了，方便其他模块调用
@@ -38,17 +41,35 @@ class PDFHelper:
 
     @staticmethod
     def handle_error(e):
-        print("Error occured: %s" % e)
+        print_error("Error occured: %s" % e)
+        
+    @staticmethod
+    def IsFileExist(path: str) -> bool:
+        return Path(path).exists()
+        
+    @classmethod
+    def IsPDFExist(cls, tempid) -> bool:
+        savepath = cls.GetPDFSavePath()
+        return PDFHelper.IsFileExist(savepath)
+    
+    @classmethod
+    def GetPDFFileName(cls, tempid) -> str:
+        return re.sub(r'[< > / \\ | : " * ?]', ' ', tempid.doctitle)
+    
+    @classmethod
+    def GetPDFSavePath(cls, tempid) -> str:
+         return "./document/pub/%s.pdf" % cls.GetPDFFileName(tempid)
 
     @classmethod
-    def PDFDonwloadEntry(cls, limit):
+    def PDFBatchDonwload(cls, limit):
         tablename = 'pubmed%s' % savetime
         count = 0
         dbpath = 'pubmedsql'
-        PMID_list: [TempPMID] = readdata1(dbpath)
+        PMID_list: [TempPMID] = DBFetchAllPMID(dbpath, tablename)
 
-        PMCID_list = [item for item in PMID_list if item.PMCID != None]
+        PMCID_list = [item for item in PMID_list if item.PMCID != ""]
         for item in PMCID_list:
+            html = ""
             count += 1
 
             if count > limit:
@@ -56,27 +77,29 @@ class PDFHelper:
                 break
             print("开始下载第%d篇" % count)
             # result是从数据库获取的列表元组，其中的每一项构成为PMCID,doctitle
-            html = PDFHelper.PDFdownload(item.PMCID)
+            
+            if cls.IsPDFExist(item):
+                cls.PDFUpdateDB(item, cls.GetPDFSavePath(tempid), dbpath)
+                print(f"PDF: {cls.GetPDFFileName(tempid)} 在保存目录当中已存在，跳过下载")
+                continue
+            else:
+                html = PDFHelper.PDFdownload(item.PMCID)
             if html == None:
                 print("网页pdf数据不存在，自动跳过该文献 PMCID为 %s" % item.PMCID)
                 continue
             elif html == 1:
                 print("30s超时,自动跳过该文献 PMCID为 %s" % item.PMCID)
                 continue
-            status = PDFHelper.PDFSave(html, item, dbpath)
+            status = PDFHelper.PDFSaveFile(html, item, dbpath)
             if status == None:
                 print("保存pdf文件发生错误，自动跳过该文献PMCID为 %s" % item.PMCID)
                 continue
             time.sleep(random.randint(0, 1))
-        ExcelHelper.to_excel(dbpath)  # 这里我把默认的数据库路径改成了全局变量dbpath
-        print("爬取最终结果信息已经自动保存到excel表格中，文件名为%s" % tablename)
-        print("爬取的所有文献已经保存到/document/pub/目录下")
-        print("爬取程序已经执行完成，自动退出, 哈哈，no errors no warning")
+
 
     @classmethod
-    def PDFdownload(cls, PMCID):
+    def PDFdownload(cls, PMCID) -> Optional[str]:
 
-        # eventlet.monkey_patch()
         downloadUrl = cls.baseurl + "pmc/articles/" + PMCID + "/pdf/main.pdf"
 
         pdf_content = ""
@@ -90,16 +113,16 @@ class PDFHelper:
 
         except (ProxyError, ConnectTimeout, ConnectionError, HTTPError) as e:
             cls.handle_error(e)
-            print("%s.pdf" % PMCID, "从目标站获取pdf数据失败")
-            return ""
+            print_error(f"{PMCID}.pdf 从目标站获取pdf数据失败")
+            return None
 
         except Exception as e:
             cls.handle_error(e)
-            print("%s.pdf" % PMCID, "从目标站获取pdf数据失败")
-        return ""
+            print_error("%s.pdf" % PMCID, "从目标站获取pdf数据失败")
+        return None
 
     @staticmethod
-    def PDFSave(html, tempid: TempPMID, dbpath):
+    def PDFSaveFile(html, tempid: TempPMID, dbpath):
         tablename = 'pubmed%s' % savetime
         # pdf = html.decode("utf-8")  # 使用Unicode8对二进制网页进行解码，直接写入文件就不需要解码了
 
@@ -114,15 +137,34 @@ class PDFHelper:
             # print("%s.pdf"%name,"文件写入到Pubmed/document/pub/下成功")
             print("pdf文件写入成功,文件ID为 %s" % tempid.PMCID, "保存路径为Pubmed/document/pub/")
             # 将pdf文件名称以及存储位置等相关信息添加到sqlite数据库当中
-            try:
-                writeSql = " UPDATE %s SET savepath = ? WHERE PMCID =?" % tablename
-                param = (savepath, tempid.PMCID)
-                DBWriter(dbpath, writeSql, param)
-
-                print("pdf文件写入成功,文件ID为 %s" % tempid.PMCID,
-                      "地址写入到数据库pubmedsql下的table%s中成功" % tablename)
-                return True
-            except:
-                print("pdf文件保存路径写入到数据库失败")
+            PDFHelper.PDFUpdateDB(tempid, savepath, dbpath)
+            return True
         except:
-            print("pdf文件写入失败,文件ID为 %s" % tempid.PMCID, "文件写入失败,检查路径")
+            print_error(f"pdf文件写入失败, 文件ID为 {tempid.PMCID}, 检查路径")
+    
+    @classmethod
+    def PDFUpdateDB(cls, tempid: TempPMID, savepath: str,  dbpath:str) ->bool:
+        tablename = 'pubmed%s' % savetime
+        try:
+            writeSql = " UPDATE %s SET savepath = ? WHERE PMCID =?" % tablename
+            param = (savepath, tempid.PMCID)
+            DBWriter(dbpath, writeSql, param)
+
+            print("pdf文件写入成功,文件ID为 %s" % tempid.PMCID,
+                  "地址写入到数据库pubmedsql下的table%s中成功" % tablename)
+            return True
+        except:
+            print_error("pdf文件保存路径写入到数据库失败")    
+            raise 
+                
+
+if __name__ == "__main__":
+    pmcid = "PMC6817243"
+    pmid = "35132177"
+    "PMC3606786"
+    "PMC8989886"
+    dbpath = 'pubmedsql'
+    
+    html = PDFHelper.PDFdownload(pmcid)
+    tempid = TempPMID(doctitle="A rapid and efficientDNAextraction protocol from fresh and frozenhumanblood samples.", PMCID=pmcid, PMID=pmid)
+    PDFHelper.PDFSaveFile(html, tempid, dbpath)

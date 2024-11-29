@@ -1,49 +1,13 @@
 import sqlite3
-from dataclasses import dataclass
+from typing import Optional, List, Union
 
-from DataType import SingleDocInfo
+from DataType import Publication
+from DataType import SingleDocInfo, TempPMID
 from timevar import savetime
+from LogHelper import print_error
 
 
 # 把一些关于sqlite3相关的操作抽象出来了，方便其他模块调用
-
-@dataclass
-class Publication:
-    doctitle: str
-    authorlist: str
-    journal: str
-    year: str
-    doi: str
-    pmid: str
-    pmcid: str
-    abstract: str
-    keyword: str
-    affiliations: str
-    freemark: str
-    reviewmark: bool
-    savepath: str
-
-    def __repr__(self) -> str:
-        return (f"Publication(doctitle='{self.doctitle}', authorlist='{self.authorlist}', "
-                f"journal='{self.journal}', doi='{self.doi}', pmid={self.pmid}, pmcid='{self.pmcid}', "
-                f"abstract='{self.abstract}', keyword='{self.keyword}', affiliations='{self.affiliations}', "
-                f"freemark={self.freemark}, reviewmark={self.reviewmark}, savepath='{self.savepath}')")
-
-    def to_dict(self) -> dict:
-        return {
-            "doctitle": self.doctitle,
-            "authorlist": self.authorlist,
-            "journal": self.journal,
-            "doi": self.doi,
-            "pmid": self.pmid,
-            "pmcid": self.pmcid,
-            "abstract": self.abstract,
-            "keyword": self.keyword,
-            "affiliations": self.affiliations,
-            "freemark": self.freemark,
-            "reviewmark": self.reviewmark,
-            "savepath": self.savepath
-        }
 
 
 def DBCreater(dbpath: str) -> bool:
@@ -58,10 +22,10 @@ def DBCreater(dbpath: str) -> bool:
             print(f"数据库创建成功: {dbpath}")
             return True
     except sqlite3.Error as e:
-        print(f"createDB SQLite Error: {e}\n")
+        print_error(f"createDB SQLite Error: {e}\n")
         return False
     except Exception as e:
-        print(f"createDB General Error: {e}\n")
+        print_error(f"createDB General Error: {e}\n")
         return False
 
 
@@ -85,8 +49,8 @@ def DBTableCreater(dbpath: str, tablename: str) -> bool:
         full_journal TEXT,
         short_journal TEXT,
         doi TEXT,
-        PMID NUMERIC,
-        PMCID NUMERIC,
+        PMID TEXT,
+        PMCID TEXT,
         abstract TEXT,
         keyword TEXT,
         affiliations TEXT,
@@ -107,15 +71,14 @@ def DBTableCreater(dbpath: str, tablename: str) -> bool:
             print(f"表 {tablename} 创建成功")
             return True
     except sqlite3.Error as e:
-        print(f"createtable SQLite Error: {e}\n")
+        print_error(f"createtable SQLite Error: {e}\n")
         return False
     except Exception as e:
-        print(f"createtable General Error: {e}\n")
+        print_error(f"createtable General Error: {e}\n")
         return False
-    
-    
-def DBTableFinder(dbpath: str) -> list:
 
+
+def DBTableFinder(dbpath: str) -> list:
     try:
         readSql = "SELECT name from sqlite_master where type='table' order by name"
         tablelist = DBReader(dbpath, readSql)
@@ -125,10 +88,10 @@ def DBTableFinder(dbpath: str) -> list:
         return tablelist
 
     except sqlite3.Error as e:
-        print("sqlite3 error: %s\n", e)
+        print_error("sqlite3 error: %s\n"% e)
 
     except Exception as e:
-        print("数据库查询出错，请检查数据库: %s", e)
+        print_error("数据库查询出错，请检查数据库: %s"% e)
 
 
 def DBReader(dbpath: str, sql: str) -> list:
@@ -157,10 +120,10 @@ def DBReader(dbpath: str, sql: str) -> list:
             ret = cursor.fetchall()
     except sqlite3.Error as e:
         # Handle SQLite-specific errors
-        print(f"readDB SQLite Error: {e}\n")
+        print_error(f"readDB SQLite Error: {e}\n")
     except Exception as e:
         # Handle any other exceptions
-        print(f"readDB General Error: {e}\n")
+        print_error(f"readDB General Error: {e}\n")
     finally:
         # Return the fetched results
         return ret
@@ -189,9 +152,9 @@ def DBWriter(dbpath: str, sql: str, params: tuple = None) -> bool:
             # Return True if any changes were made, otherwise False
             return conn.total_changes > 0
     except sqlite3.Error as e:
-        print(f"writeDB SQLite Error: {e}\n")
+        print_error(f"writeDB SQLite Error: {e}\n")
     except Exception as e:
-        print(f"writeDB General Error: {e}\n")
+        print_error(f"writeDB General Error: {e}\n")
     finally:
         return False
 
@@ -218,6 +181,86 @@ def DBSaveInfo(singleinfo: SingleDocInfo, dbpath: str):
             print(f"单个页面数据写入成功 对应PMID为{pmid}\n")
 
     except sqlite3.Error as e:
-        print(f"当前页面数据保存失败: {e}\n")
+        print_error(f"当前页面数据保存失败: {e}\n")
     except Exception as e:
-        print(f"readDB Error: {e}\n")
+        print_error(f"readDB Error: {e}\n")
+
+
+def DBFetchAllPMID(dbpath: str, tableName) -> list[TempPMID]:
+    """
+    虽然说这个函数叫FetchPMID
+    但是实际上返回的是PMID PMCID doctitle合成的TempPMID数据类型
+    请注意使用
+    
+    """
+    print("dbpath: ", dbpath)
+    print("tablename: ", tableName)
+
+    try:
+        sql = "SELECT PMCID, PMID, doctitle FROM %s WHERE freemark = '2'" % tableName
+        # 根据设置的freemark参数，查找数据库文献的信息,free = 1用于查找所有免费文献用来下载，而free = 2用于拿数据所有文献去获得详细信息
+        print(sql)
+        ret = DBReader(dbpath, sql)
+        for i in range(len(ret)):
+            ret[i] = TempPMID(ret[i][0], ret[i][1], ret[i][2])
+        print(ret)
+        print('读取sql信息成功 数据类型为PMCID和doctitle\n')
+        return ret
+
+    except Exception as e:
+        print_error("连接数据库失败，请检查目标数据库: %s\n"% e)
+        return []
+
+
+def DBFetchAllRecord(dbpath: str, tableName, outputpublication = True) -> Union[List[Publication], List, None]:
+    """
+    虽然说这个函数叫FetchPMID
+    但是实际上返回的是PMID PMCID doctitle合成的TempPMID数据类型
+    请注意使用
+    
+    """
+    print("dbpath: ", dbpath)
+    print("tablename: ", tableName)
+
+    try:
+        sql: str = f'''
+                SELECT
+                    id,
+                    doctitle,
+                    full_author,
+                    short_author,
+                    full_journal,
+                    short_journal,
+                    doi,
+                    PMID,
+                    PMCID,
+                    abstract,
+                    keyword,
+                    affiliations,
+                    freemark,
+                    reviewmark,
+                    savepath
+                FROM {tableName}
+            '''  # 根据设置的freemark参数，查找数据库文献的信息,free = 1用于查找所有免费文献用来下载，而free = 2用于拿数据所有文献去获得详细信息
+        print(sql)
+        ret = DBReader(dbpath, sql)
+        
+        
+        if outputpublication == False:
+            print(ret)
+            print('读取sql信息成功 数据类型为Publication\n')
+            return ret
+        
+        for i in range(len(ret)):
+            ret[i] = Publication(ret[i][0], ret[i][1], ret[i][2],
+                                 ret[i][3], ret[i][4], ret[i][5],
+                                 ret[i][6], ret[i][7], ret[i][8],
+                                 ret[i][9], ret[i][10], ret[i][11],
+                                 ret[i][12], ret[i][13])
+        print(ret)
+        print('读取sql信息成功 数据类型为Publication\n')
+        return ret
+
+    except Exception as e:
+        print("连接数据库失败，请检查目标数据库: %s\n"% e)
+        return None
