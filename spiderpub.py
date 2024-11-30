@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-import random
 import re
 from time import sleep
 from typing import Optional
@@ -11,17 +10,17 @@ import DBHelper
 from DataType import ArticleFreeType
 from DataType import SingleSearchData
 from WebHelper import WebHelper
-from timevar import savetime
+from timevar import savetime, feedbacktime
 from LogHelper import print_error
 
 # searchweb= opensearch(parameter).decode("utf-8")#使用Unicode8对二进制网页进行解码
 
 # 这部分函数的功能主要是便利整个搜索页，后面可能做一个显示most recently结果的可选sort参数,默认每页50个结果
 
-def parseSearchHtml(html: str, resultNum: list[int]) -> Optional[list[SingleSearchData]]:
+def parseSearchHtml(html: str) -> Optional[list[SingleSearchData]]:
     # 这部分函数的功能主要是便利整个搜索页，后面可能做一个显示most recently结果的可选sort参数,默认每页50个结果
 
-    if os.getenv("DEBUG"):
+    if os.getenv("LOCAL_DEBUG"):
         parser = etree.HTMLParser()
         html_etree = etree.parse("./searchresult.html", parser)
     else:
@@ -29,11 +28,11 @@ def parseSearchHtml(html: str, resultNum: list[int]) -> Optional[list[SingleSear
 
     resultNumElem = html_etree.xpath(
         "//div[@id='search-results']/section[@class='search-results-list']//span[@class='value']/text()")
-    if len(resultNumElem) != 0:
-        resultNum[0] = int(resultNumElem[0].replace(",", ""))
-    else:
-        return []
-    print("当前关键词共有%d个搜索结果" % resultNum[0])
+    # if len(resultNumElem) != 0:
+    #     resultNum[0] = int(resultNumElem[0].replace(",", ""))
+    # else:
+    #     return []
+    # print("当前关键词共有%d个搜索结果" % resultNum[0])
 
     ret = []
     try:
@@ -47,7 +46,6 @@ def parseSearchHtml(html: str, resultNum: list[int]) -> Optional[list[SingleSear
             xpath_expression = './/a[@class="docsum-title"]/text() | .//a[@class="docsum-title"]//b/text()'
             doctitleElem = singleSearchElem.xpath(xpath_expression)
 
-            print(doctitleElem)
             doctitle = "".join([item.strip() for item in doctitleElem if item.strip()])
             print("doctitle: ", doctitle)
 
@@ -82,7 +80,7 @@ def parseSearchHtml(html: str, resultNum: list[int]) -> Optional[list[SingleSear
             PMID = singleSearchElem.xpath(".//span[@class='docsum-pmid']/text()")
             if len(PMID) != 0:
                 PMID = PMID[0]
-            print(PMID)
+            print("PMID: ", PMID)
 
             # 7.freemark
             # 下面是freemark，分为两种类型，free pmc article和free article，没有的为空值
@@ -128,7 +126,6 @@ def parseSearchHtml(html: str, resultNum: list[int]) -> Optional[list[SingleSear
         print_error("遍历搜索页信息失败: %s\n" % e)
         return []
 
-
 # file=open("pubmed.txt","w",encoding="utf-8")
 
 def SaveSearchData(datalist: list[SingleSearchData], dbpath: str):  # 构建一个保存检索数据的sqlite数据库
@@ -150,13 +147,13 @@ def SaveSearchData(datalist: list[SingleSearchData], dbpath: str):  # 构建一�
 
             sql = f"""
             INSERT INTO {tablename} (
-                doctitle, short_author, full_author, short_journal, full_journal,  PMID, freemark, reviewmark
+                doctitle,  full_author, short_author, full_journal, short_journal, PMID, freemark, reviewmark
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """
 
             writeparam = (singleSearchData.doctitle,
-                          singleSearchData.short_author,
                           singleSearchData.full_author,
+                          singleSearchData.short_author,
                           singleSearchData.full_journal,
                           singleSearchData.short_journal,
                           singleSearchData.PMID,
@@ -169,7 +166,7 @@ def SaveSearchData(datalist: list[SingleSearchData], dbpath: str):  # 构建一�
             continue
 
 
-def spiderpub(parameter: str, result_limit: int):
+def spiderpub(parameter: str, page_limit: int, resultNum: int):
     size = re.search('&size=(\d{1,3})', parameter)
     if size == None:
         parameter += '&size=50'
@@ -177,25 +174,23 @@ def spiderpub(parameter: str, result_limit: int):
     page_count = 0
     datalist = []
     result_all_num = -1
-    pagemax = 1
-    resultNum: [int] = [0]
-    for i in range(1, result_limit + 1):
+    pagemax = (resultNum + 49) // 50
+    for i in range(1, page_limit + 1):
         # 开始遍历每一页结果，一共num页最大pagemax页
         if i > pagemax:
             print("已遍历所有页\n")
             break
-        parameter = parameter + "&page=" + str(i)
+        temp_param = parameter + "&page=" + str(i)
         try:
-            html = WebHelper.getSearchHtml(parameter)
+            html = WebHelper.getSearchHtml(temp_param)
             if html == None:
                 print("检索页获取出错，即将退出\n")
                 break
-            SingleSearchPageData = parseSearchHtml(html, resultNum)
+            SingleSearchPageData = parseSearchHtml(html)
             if SingleSearchPageData == None:
                 print("遍历检索页信息出错，当前检索页为%d(每页50个结果)\n" % i)
             datalist.extend(SingleSearchPageData)
-            pagemax = (resultNum[0] + 49) // 50
-            sleep(random.randint(0, 1))
+            sleep( 0.3 * feedbacktime)
             print("已爬取完第%d页\n" % i)
             print("len(datalist): %d\n" % len(datalist))
             # print(datalist)

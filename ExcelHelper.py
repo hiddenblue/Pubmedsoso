@@ -1,29 +1,46 @@
 import os
+import sqlite3
 import sys
 from time import sleep
 
-import xlwt
+import pandas as pd
 
-import DBHelper
 from timevar import savetime, feedbacktime
 from LogHelper import print_error
 
 
 class ExcelHelper:
-    savepath: str = f'./pubmed-{savetime}.xls'
+    savepath: str = f'./pubmed-{savetime}.xlsx'
     tablename: str = f'pubmed{savetime}'
+    # 原始列名和新列名组成的字典
+    rename_dict = {
+        'id': '序号',
+        'doctitle': '文献标题',
+        'full_author': '作者全名',
+        'short_author': '作者简名',
+        'full_journal': '期刊全名',
+        'short_journal': '期刊简名',
+        'doi': 'doi',
+        'PMID': 'PMID',
+        'PMCID': 'PMCID',
+        'abstract': '摘要',
+        'keyword': '关键词',
+        'affiliations': '作者单位',
+        'freemark': '是否有免费全文',
+        'reviewmark': '是否是review',
+        'savepath': '保存路径'
+    }
 
     @classmethod
-    def to_excel(cls, dbpath: str, override = False) -> None:
+    def PD_To_excel(cls, dbpath: str, override=False) -> None:
         """
-        将数据库输出到Excel文件
+        一个借助pandas对数据导出到excel的更简单的实现
         """
         savepath = cls.savepath
-        
         if os.path.exists(savepath):
             print(f"指定的保存文件 {savepath[2:]} 已存在，文件重复\n\n")
             sleep(feedbacktime)
-            
+
             if override:
                 os.remove(savepath)
             else:
@@ -34,7 +51,7 @@ class ExcelHelper:
                     print("无法保存成Excel文件，文件名重复冲突\n")
                     sys.exit(-1)
         sleep(feedbacktime)
-        
+
         """
         id,
         doctitle,
@@ -52,52 +69,53 @@ class ExcelHelper:
         reviewmark,
         savepath
         """
-
         try:
-            db_data: list = DBHelper.DBFetchAllRecord(dbpath, cls.tablename, outputpublication=False)
-            print("读取最终数据库信息成功")
+            with sqlite3.connect(dbpath) as conn:
+                sql: str = f'''
+                SELECT
+                    id,
+                    doctitle,
+                    full_author,
+                    short_author,
+                    full_journal,
+                    short_journal,
+                    doi,
+                    PMID,
+                    PMCID,
+                    abstract,
+                    keyword,
+                    affiliations,
+                    freemark,
+                    reviewmark,
+                    savepath
+                FROM {cls.tablename}'''
+                df = pd.read_sql(sql, conn)
+
+
+            freemark_column = df['freemark']
+            print(freemark_column)
+            df.rename(columns=cls.rename_dict, inplace=True)
+            
         except Exception as e:
-            print_error(f"读取数据库生成Excel时失败，请检查数据库: {e}")
-            raise
-
+            print_error("将从数据库当中读取数据时发生错误: ", e)
+        
         try:
-            workbook = xlwt.Workbook(encoding="utf-8", style_compression=0)
-            worksheet = workbook.add_sheet("pubmed_soso", cell_overwrite_ok=True)
-            headers: tuple = (
-                '序号', '文献标题', '作者全名', '作者简名', '期刊全名', '期刊简名',
-                'doi', 'PMID', 'PMCID',
-                '摘要', '关键词', '作者单位', '是否有免费全文', '是否是review', '保存路径'
-            )
-
-            # 创建表头
-            for i, header in enumerate(headers):
-                worksheet.write(0, i, header)
-
-            # 填充数据
-            for row_idx, item in enumerate(db_data, start=1):
-                print(f"保存第 {row_idx} 条到Excel")
-                for col_idx, value in enumerate(item):
-                    value = str(value)
-                    if col_idx == 12:
-                        # freemark 为 '2' 时，“是”有免费的PMC文件PDF
-                        value = value.replace('2', '是').replace('1', '否').replace('0', '否')
-                    if col_idx == 13:
-                        # reviewmark 为 '1' 时，“是”是review类型
-                        value = value.replace('1', '是').replace('0', '否')
-                    worksheet.write(row_idx, col_idx, value)
-            workbook.save(cls.savepath)
-            print("\n爬取数据库信息保存到Excel成功\n")
+            df.to_excel(cls.savepath, sheet_name=cls.tablename)
+        
         except Exception as e:
             print_error(f"\n爬取数据库信息保存到Excel失败: {e}\n")
+            
 
 
 if __name__ == "__main__":
+    """
     dbpath: str = 'pubmedsql'
     table_list: list = DBHelper.DBTableFinder(dbpath)
     if not table_list:
         print("目标数据库不存在或者内容为空，请检查数据库，即将退出")
         sleep(feedbacktime)
         sys.exit(-1)
+        
     print("\n")
     while True:
         sleep(0.5)
@@ -128,3 +146,7 @@ if __name__ == "__main__":
             sleep(3)
             print_error('----' * 20, '\n')
     os.system("pause")
+    """
+
+    dbpath: str = 'pubmedsql'
+    ExcelHelper.PD_To_excel(dbpath=dbpath)

@@ -1,12 +1,11 @@
 import urllib.parse
-from typing import Optional
+from typing import Optional, Union
 
 import requests
 from lxml import etree
 from requests.exceptions import HTTPError, ConnectionError, ProxyError, ConnectTimeout
 
 from LogHelper import print_error
-
 
 class WebHelper:
     # 这个类用来专门下载网页需要的html文件，不能作为pdf下载调用
@@ -16,12 +15,15 @@ class WebHelper:
     }
 
     @classmethod
-    def createParamDcit(cls, keyword):
+    def createParamDcit(cls, keyword, year: Union[int, None]=None):
 
         if " " in keyword:
             keyword = keyword.replace(" ", "%20")
         search_keywords_dict = {}
         search_keywords_dict['term'] = keyword.strip()
+        
+        if year:
+            search_keywords_dict['year'] = year
         return search_keywords_dict
 
     @staticmethod
@@ -87,9 +89,6 @@ class WebHelper:
         except Exception as e:
             print_error("获取当前关键词搜索结果数量时出错: ", e)
             raise
-            
-        
-
 
 if __name__ == "__main__":
     pass

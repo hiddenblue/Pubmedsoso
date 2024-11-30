@@ -7,8 +7,7 @@ from pathlib import Path
 import requests
 from requests.exceptions import HTTPError, ConnectionError, ProxyError, ConnectTimeout
 
-from DBHelper import DBWriter, DBFetchAllPMID
-from ExcelHelper import ExcelHelper
+from DBHelper import DBWriter, DBFetchAllPMID, DBFetchAllFreePMC
 from DataType import TempPMID
 from timevar import savetime
 from LogHelper import print_error
@@ -49,15 +48,15 @@ class PDFHelper:
         
     @classmethod
     def IsPDFExist(cls, tempid) -> bool:
-        savepath = cls.GetPDFSavePath()
+        savepath = cls.GetPDFSavePath(tempid)
         return PDFHelper.IsFileExist(savepath)
     
     @classmethod
     def GetPDFFileName(cls, tempid) -> str:
-        return re.sub(r'[< > / \\ | : " * ?]', ' ', tempid.doctitle)
+        return re.sub(r'[< >/\\|:"*?]', ' ', tempid.doctitle)
     
     @classmethod
-    def GetPDFSavePath(cls, tempid) -> str:
+    def GetPDFSavePath(cls, tempid: TempPMID) -> str:
          return "./document/pub/%s.pdf" % cls.GetPDFFileName(tempid)
 
     @classmethod
@@ -65,7 +64,7 @@ class PDFHelper:
         tablename = 'pubmed%s' % savetime
         count = 0
         dbpath = 'pubmedsql'
-        PMID_list: [TempPMID] = DBFetchAllPMID(dbpath, tablename)
+        PMID_list: [TempPMID] = DBFetchAllFreePMC(dbpath, tablename)
 
         PMCID_list = [item for item in PMID_list if item.PMCID != ""]
         for item in PMCID_list:
@@ -79,8 +78,8 @@ class PDFHelper:
             # result是从数据库获取的列表元组，其中的每一项构成为PMCID,doctitle
             
             if cls.IsPDFExist(item):
-                cls.PDFUpdateDB(item, cls.GetPDFSavePath(tempid), dbpath)
-                print(f"PDF: {cls.GetPDFFileName(tempid)} 在保存目录当中已存在，跳过下载")
+                cls.PDFUpdateDB(item, cls.GetPDFSavePath(item), dbpath)
+                print(f"PDF: {cls.GetPDFFileName(item)} 在保存目录当中已存在，跳过下载")
                 continue
             else:
                 html = PDFHelper.PDFdownload(item.PMCID)
@@ -127,7 +126,7 @@ class PDFHelper:
         # pdf = html.decode("utf-8")  # 使用Unicode8对二进制网页进行解码，直接写入文件就不需要解码了
 
         try:
-            articleName = re.sub(r'[< > / \\ | : " * ?]', ' ', tempid.doctitle)
+            articleName = re.sub(r'[< >/\\|:"*?]', ' ', tempid.doctitle)
             # 需要注意的是文件命名中不能含有以上特殊符号，只能去除掉
             savepath = "./document/pub/%s.pdf" % articleName
             file = open(savepath, 'wb')

@@ -1,5 +1,5 @@
 import sqlite3
-from typing import Optional, List, Union
+from typing import List, Union
 
 from DataType import Publication
 from DataType import SingleDocInfo, TempPMID
@@ -54,11 +54,10 @@ def DBTableCreater(dbpath: str, tablename: str) -> bool:
         abstract TEXT,
         keyword TEXT,
         affiliations TEXT,
-        freemark NUMERIC,
+        freemark TEXT,
         reviewmark NUMERIC,
         savepath TEXT
-    )
-    '''
+    )'''
 
     try:
         # Connect to the database
@@ -78,13 +77,12 @@ def DBTableCreater(dbpath: str, tablename: str) -> bool:
         return False
 
 
-def DBTableFinder(dbpath: str) -> list:
+def DBTableFinder(dbpath: str) -> list[str]:
     try:
-        readSql = "SELECT name from sqlite_master where type='table' order by name"
+        readSql = "SELECT name from sqlite_master where type='table' and name like 'pubmed%' order by name"
         tablelist = DBReader(dbpath, readSql)
         for i in range(len(tablelist)):
             tablelist[i] = tablelist[i][0]
-        del tablelist[-1]
         return tablelist
 
     except sqlite3.Error as e:
@@ -92,6 +90,22 @@ def DBTableFinder(dbpath: str) -> list:
 
     except Exception as e:
         print_error("数据库查询出错，请检查数据库: %s"% e)
+
+def DBRemoveTable(dbpath: str, tablename: str) -> bool:
+    try:
+        current_table = DBTableFinder(dbpath)
+        
+        if tablename not in current_table:
+            print(f"the target table: {tablename} is not exist")
+            return False
+        
+        remove_sql = f"DROP TABLE {tablename}"
+        DBWriter(dbpath, remove_sql)
+        return True
+    
+    except Exception as e:
+        print_error(f"removeTable SQLite Error: {e}\n")
+        return False
 
 
 def DBReader(dbpath: str, sql: str) -> list:
@@ -167,14 +181,15 @@ def DBSaveInfo(singleinfo: SingleDocInfo, dbpath: str):
     try:
         # Prepare the data
         pmcid = singleinfo.PMCID
+        doi = singleinfo.doi
         abstract_str = singleinfo.abstract.to_complete_abs()
         affiliations_str = '\n'.join(singleinfo.affiliations)
         keyword = singleinfo.keyword
         pmid = singleinfo.PMID
 
         # Execute the update statement
-        writer_sql = f"UPDATE {tablename} SET PMCID = ?, abstract = ?, affiliations = ?, keyword = ? WHERE PMID = ?"
-        writer_param = (pmcid, abstract_str, affiliations_str, keyword, pmid)
+        writer_sql = f"UPDATE {tablename} SET PMCID = ?, doi = ?, abstract = ?, affiliations = ?, keyword = ? WHERE PMID = ?"
+        writer_param = (pmcid, doi, abstract_str, affiliations_str, keyword, pmid)
 
         ret: bool = DBWriter(dbpath, writer_sql, writer_param)
         if ret:
@@ -184,6 +199,17 @@ def DBSaveInfo(singleinfo: SingleDocInfo, dbpath: str):
         print_error(f"当前页面数据保存失败: {e}\n")
     except Exception as e:
         print_error(f"readDB Error: {e}\n")
+
+
+def DBFetchAllFreePMC(dbpath: str, tableName) -> list[TempPMID]:
+    """
+    相当于一个重载的 DBFetchAllPMID 函数，只返回了有pmc原文的部分
+
+    
+    """
+    ret = DBFetchAllPMID(dbpath, tableName)
+    
+    return [temppmid for temppmid in ret if temppmid.PMCID is not None] 
 
 
 def DBFetchAllPMID(dbpath: str, tableName) -> list[TempPMID]:
@@ -197,8 +223,7 @@ def DBFetchAllPMID(dbpath: str, tableName) -> list[TempPMID]:
     print("tablename: ", tableName)
 
     try:
-        sql = "SELECT PMCID, PMID, doctitle FROM %s WHERE freemark = '2'" % tableName
-        # 根据设置的freemark参数，查找数据库文献的信息,free = 1用于查找所有免费文献用来下载，而free = 2用于拿数据所有文献去获得详细信息
+        sql = "SELECT PMCID, PMID, doctitle FROM %s" % tableName
         print(sql)
         ret = DBReader(dbpath, sql)
         for i in range(len(ret)):

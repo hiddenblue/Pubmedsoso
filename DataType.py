@@ -13,9 +13,9 @@ class ABS_PartEnumType(Enum):
 
 
 class ArticleFreeType(Enum):
-    NoneFreeArticle = 0
-    FreeArticle = 1
-    FreePMCArticle = 2
+    NoneFreeArticle = "None"
+    FreeArticle = "FreeArticle"
+    FreePMCArticle = "FreePMCArticle"
 
 @dataclass
 class TempPMID:
@@ -60,12 +60,14 @@ class SingleDocInfo:
     def __init__(
             self,
             PMCID: str = "",
+            doi: str = "",
             abstract: Optional['Abstract'] = None,
             affiliations: Optional[List[str]] = None,
             keyword: str = "",
             PMID: str = "",
     ):
         self.PMCID = PMCID
+        self.doi = doi
         self.abstract = abstract if abstract else Abstract()
         self.affiliations = affiliations if affiliations else []
         self.keyword = keyword
@@ -81,6 +83,7 @@ class Abstract:
             conclusions: str = "",
             registration: str = "",
             keywords: str = "",
+            abstract: str = "",
     ):
         self.background = background
         self.methods = methods
@@ -88,6 +91,7 @@ class Abstract:
         self.conclusions = conclusions
         self.registration = registration
         self.keywords = keywords
+        self.abstract = abstract
 
     def to_complete_abs(self) -> str:
         """
@@ -106,6 +110,8 @@ class Abstract:
             parts.append(f"Registration: {self.registration.strip()}")
         if self.keywords:
             parts.append(f"Keywords: {self.keywords.strip()}")
+        if self.abstract:
+            parts.append(f"Abstract: {self.abstract.strip()}")
         return "\n".join(parts)
 
 

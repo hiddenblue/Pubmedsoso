@@ -47,6 +47,11 @@ if __name__ == '__main__':
                         help='add --number or -n to specify the page number you wanna to crawl'
                              'For example --number 10. Default number is 10',
                         default=10)
+    
+    parser.add_argument("--year", "-y", type=int,
+                        help='add --year or -y to specify year scale you would to search'
+                             'For example --year 10. The Default is Not set',
+                        default=None)
 
     parser.add_argument("--download_num", "-d", type=int,
                         help='add --download_num or -d to specify the doc number you wanna to download'
@@ -64,7 +69,7 @@ if __name__ == '__main__':
 
     print(f"当前使用的命令行参数 {args.__dict__}\n")
     print(
-        f"当前使用的命令行参数 搜索关键词: \"{args.keyword}\", 文献信息检索数量: {args.page_num}, 文献下载数量:{args.download_num}\n")
+        f"当前使用的命令行参数 搜索关键词: \"{args.keyword}\", 文献信息检索数量: {args.page_num}, 年份：{args.year}, 文献下载数量:{args.download_num}\n")
     try:
         result_num = WebHelper.GetSearchResultNum(args.keyword)
     except Exception as err:
@@ -103,7 +108,6 @@ if __name__ == '__main__':
 
     printSpliter()
     print("document/pub目录检查完成，开始执行主程序\n")
-    printSpliter()
 
     sleep(feedbacktime)
 
@@ -111,14 +115,14 @@ if __name__ == '__main__':
     # ?term=cell%2Bblood&filter=datesearch.y_1&size=20
 
     # 根据上面输入的关键词初始化生成url参数
-    ParamDict = WebHelper.createParamDcit(args.keyword)
+    ParamDict = WebHelper.createParamDcit(args.keyword, args.year)
     encoded_param = WebHelper.encodeParam(ParamDict)
 
     # 从此处开始爬取数据
     
     printSpliter()
     
-    spiderpub(encoded_param, args.page_num)
+    spiderpub(encoded_param, args.page_num, result_num)
     
     printSpliter()
     print("\n\n爬取搜索结果完成，开始执行单篇检索，耗时更久\n\n")
@@ -130,10 +134,10 @@ if __name__ == '__main__':
     
     PDFHelper.PDFBatchDonwload(args.download_num)
 
-    ExcelHelper.to_excel(dbpath, override=True)  # 这里我把默认的数据库路径改成了全局变量dbpath
+    ExcelHelper.PD_To_excel(dbpath, override=True)
     print("爬取最终结果信息已经自动保存到excel表格中，文件名为%s" % ExcelHelper.tablename)
     print("爬取的所有文献已经保存到/document/pub/目录下")
     print("爬取程序已经执行完成，自动退出, 哈哈，no errors no warning")
     
     printSpliter()
-    os.system("pause")
+    sys.exit(0)
