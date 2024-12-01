@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+import asyncio
 import os
+import platform
 from time import sleep
 from typing import Optional, List
 
@@ -152,29 +154,33 @@ def spiderpub(parameter: str, page_limit: int, resultNum: int) -> None:
         resultNum (int): Total number of search results.
     """
     datalist = []
+    param_list = []
     pagemax = (resultNum + 49) // 50
 
-    for i in range(1, page_limit + 1):
-        if i > pagemax:
-            print("已遍历所有页\n")
-            break
-
+    print(f"准备获取搜索页面信息第1-{min(page_limit, pagemax)}页")
+    
+    for i in range(1, min(page_limit + 1, pagemax)):
         temp_param = parameter + "&page=" + str(i)
-        try:
-            html = WebHelper.getSearchHtml(temp_param)
-            if html is None:
-                print("检索页获取出错，即将退出\n")
-                break
+        param_list.append(temp_param)
+        
+    try:
+        if platform.system() == "Windows":
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+        loop = asyncio.get_event_loop()
+        html_list = loop.run_until_complete(WebHelper.getSearchHtmlAsync(param_list))
 
+    except Exception as e:
+        print_error("spiderpub函数出错，请检查结果\n")
+        raise
+        
+    for html in html_list:
+        if html is None:
+            print("部分检索页面出错")
+            continue
+        else:
             SingleSearchPageData = parseSearchHtml(html)
             if SingleSearchPageData is not None:
                 datalist.extend(SingleSearchPageData)
-
-            sleep(0.3)
-            print("已爬取完第%d页\n" % i)
-            print("len(datalist): %d\n" % len(datalist))
-        except Exception as e:
-            print_error("spiderpub函数出错，请检查结果\n")
 
     dbpath = 'pubmedsql'
     tablename = f'pubmed{savetime}'

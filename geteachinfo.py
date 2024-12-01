@@ -157,9 +157,8 @@ def geteachinfo(dbpath):
             target = [pmid.PMID for pmid in PMID_list[i:i+batchsize]]
         
         try:
-            if platform.system() == "Windows":
-                asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-                results.extend(asyncio.run(WebHelper.GetAllHtmlAsync(target)))
+
+            results.extend(asyncio.run(WebHelper.GetAllHtmlAsync(target)))
         except Exception as e:
             print_error("异步爬取singleinfo时发生错误: ", e)
             print_error("默认自动跳过")
@@ -167,7 +166,7 @@ def geteachinfo(dbpath):
 
     print(len(results))
     end = time.time()
-    print("geteachinfo took %.2f seconds" % (end - start))
+    print("geteachinfo() takes %.2f seconds" % (end - start))
 
     for i in range(len(results)):
         print("当前序号: ", i)

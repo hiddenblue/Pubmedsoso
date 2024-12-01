@@ -125,7 +125,8 @@ if __name__ == '__main__':
     printSpliter()
     print("\n\n爬取搜索结果完成，开始执行文献下载，耗时更久\n\n")
 
-    PDFHelper.PDFBatchDonwload(args.download_num)
+    # PDFHelper.PDFBatchDonwload(args.download_num)
+    PDFHelper.PDFBatchDownloadEntry(args.download_num)
 
     ExcelHelper.PD_To_excel(dbpath, override=True)
     print("爬取最终结果信息已经自动保存到excel表格中，文件名为%s" % ExcelHelper.tablename)

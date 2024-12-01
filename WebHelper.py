@@ -5,6 +5,7 @@ from typing import Optional, Union
 
 import aiohttp
 import requests
+from aiohttp import ClientSession, ClientTimeout
 from lxml import etree
 from requests.exceptions import HTTPError, ConnectionError, ProxyError, ConnectTimeout
 
@@ -44,7 +45,7 @@ class WebHelper:
         print_error("Error occured: %s" % e)
 
     @classmethod
-    def getSearchHtml(cls, parameter):
+    def getSearchHtml(cls, parameter:str):
         # openurl是用于使用指定的搜索parameter进行检索，以get的方式获取pubmed的搜索结果页面，返回成html文件
         paramencoded = "?" + parameter
         try:
@@ -52,6 +53,24 @@ class WebHelper:
             return SearchHtml
         except Exception as e:
             print_error("获取检索页失败，请检查输入的参数 %s\n" % e)
+    
+    @classmethod
+    async def getSearchHtmlAsync(cls, parameter_list: list[str]) -> list[str]:
+        """
+        异步批量版本的getSearchHtml()， 传入的参数是list
+        返回批量化的获取结果
+        """
+        parameter_list_encoded = [ "?" + param for param in parameter_list ]
+        async with aiohttp.ClientSession(timeout=ClientTimeout(15)) as session:
+            print(f"爬取第0-{len(parameter_list)}当中")
+            start = time.time()
+            # limit the semaphore
+            tasks_search = [asyncio.create_task(cls.GetHtmlAsync(session, param_encode, semaphore=asyncio.Semaphore(3))) for param_encode in parameter_list_encoded]
+            results = await asyncio.gather(*tasks_search)
+            end = time.time()
+            
+            print("getSearchHtmlAsync() takes %.2f seconds." % (end - start))
+        return results
 
     @classmethod
     def GetHtml(cls, session, paramUrlEncoded: str, baseurl="https://pubmed.ncbi.nlm.nih.gov/") -> Optional[str]:
@@ -98,15 +117,14 @@ class WebHelper:
             raise
 
     @classmethod
-    async def GetHtmlAsync(cls, session, paramUrlEncoded: str, baseurl="https://pubmed.ncbi.nlm.nih.gov/") -> Optional[
+    async def GetHtmlAsync(cls, session: ClientSession, paramUrlEncoded: str, baseurl="https://pubmed.ncbi.nlm.nih.gov/", semaphore=asyncio.Semaphore(5) ) -> Optional[
         str]:
         """
         异步改造后的html请求函数，基于asyncio和aiohttp包
 
-        
         """
         request_url = cls.baseurl + paramUrlEncoded
-        semaphore = asyncio.Semaphore(5)
+        # semaphore = asyncio.Semaphore(5)
 
         async with semaphore:
             try:
@@ -118,6 +136,11 @@ class WebHelper:
                 cls.handle_error(e)
                 print_error("GetHTML requests Error: %s" % e)
                 return None
+            
+            except Exception as e:
+                cls.handle_error(e)
+                print_error("GetHTML requests Error: %s" % e)
+                return None  
 
     @classmethod
     async def GetAllHtmlAsync(cls, PMIDList: list[str]) -> list[str]:
@@ -125,12 +148,15 @@ class WebHelper:
         是GetHtmlAsync的包装函数，
         一次性获取所有给定的html页面
         """
-        async with aiohttp.ClientSession() as session:
+        # todo
+        # 这个aiohttp访问的代码可以复用的
+        async with aiohttp.ClientSession(timeout=ClientTimeout(30)) as session:
+            # 这里设置了aiohttp的timeout属性
             start = time.time()
-            tasks = [asyncio.create_task(cls.GetHtmlAsync(session, PMID)) for PMID in PMIDList]
-            results = await asyncio.gather(*tasks)
+            tasks2 = [asyncio.create_task(cls.GetHtmlAsync(session, PMID)) for PMID in PMIDList]
+            results = await asyncio.gather(*tasks2)
             end = time.time()
-            print("takes %.2f seconds" % (end - start))
+            print("GetAllHtmlAsync() takes %.2f seconds" % (end - start))
             return results
 
 
