@@ -3,8 +3,8 @@ from typing import List, Union
 
 from DataType import Publication
 from DataType import SingleDocInfo, TempPMID
-from timevar import savetime
 from LogHelper import print_error
+from config import savetime
 
 
 # 把一些关于sqlite3相关的操作抽象出来了，方便其他模块调用
@@ -86,23 +86,24 @@ def DBTableFinder(dbpath: str) -> list[str]:
         return tablelist
 
     except sqlite3.Error as e:
-        print_error("sqlite3 error: %s\n"% e)
+        print_error("sqlite3 error: %s\n" % e)
 
     except Exception as e:
-        print_error("数据库查询出错，请检查数据库: %s"% e)
+        print_error("数据库查询出错，请检查数据库: %s" % e)
+
 
 def DBRemoveTable(dbpath: str, tablename: str) -> bool:
     try:
         current_table = DBTableFinder(dbpath)
-        
+
         if tablename not in current_table:
             print(f"the target table: {tablename} is not exist")
             return False
-        
+
         remove_sql = f"DROP TABLE {tablename}"
         DBWriter(dbpath, remove_sql)
         return True
-    
+
     except Exception as e:
         print_error(f"removeTable SQLite Error: {e}\n")
         return False
@@ -116,9 +117,6 @@ def DBReader(dbpath: str, sql: str) -> list:
     :param sql: SQL statement to execute (e.g., SELECT).
     :return: List of tuples containing the query results.
     """
-    # Generate the tablename using the provided savetime
-    tablename = f'pubmed{savetime}'
-    print(f"tablename: {tablename}")
 
     # Initialize an empty list to store the results
     ret = []
@@ -208,8 +206,8 @@ def DBFetchAllFreePMC(dbpath: str, tableName) -> list[TempPMID]:
     
     """
     ret = DBFetchAllPMID(dbpath, tableName)
-    
-    return [temppmid for temppmid in ret if temppmid.PMCID is not None] 
+
+    return [temppmid for temppmid in ret if temppmid.PMCID is not None]
 
 
 def DBFetchAllPMID(dbpath: str, tableName) -> list[TempPMID]:
@@ -233,11 +231,11 @@ def DBFetchAllPMID(dbpath: str, tableName) -> list[TempPMID]:
         return ret
 
     except Exception as e:
-        print_error("连接数据库失败，请检查目标数据库: %s\n"% e)
+        print_error("连接数据库失败，请检查目标数据库: %s\n" % e)
         return []
 
 
-def DBFetchAllRecord(dbpath: str, tableName, outputpublication = True) -> Union[List[Publication], List, None]:
+def DBFetchAllRecord(dbpath: str, tableName, outputpublication=True) -> Union[List[Publication], List, None]:
     """
     虽然说这个函数叫FetchPMID
     但是实际上返回的是PMID PMCID doctitle合成的TempPMID数据类型
@@ -269,13 +267,12 @@ def DBFetchAllRecord(dbpath: str, tableName, outputpublication = True) -> Union[
             '''  # 根据设置的freemark参数，查找数据库文献的信息,free = 1用于查找所有免费文献用来下载，而free = 2用于拿数据所有文献去获得详细信息
         print(sql)
         ret = DBReader(dbpath, sql)
-        
-        
+
         if outputpublication == False:
             print(ret)
             print('读取sql信息成功 数据类型为Publication\n')
             return ret
-        
+
         for i in range(len(ret)):
             ret[i] = Publication(ret[i][0], ret[i][1], ret[i][2],
                                  ret[i][3], ret[i][4], ret[i][5],
@@ -287,5 +284,5 @@ def DBFetchAllRecord(dbpath: str, tableName, outputpublication = True) -> Union[
         return ret
 
     except Exception as e:
-        print("连接数据库失败，请检查目标数据库: %s\n"% e)
+        print("连接数据库失败，请检查目标数据库: %s\n" % e)
         return None

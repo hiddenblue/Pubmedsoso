@@ -7,9 +7,9 @@ from time import sleep
 from ExcelHelper import ExcelHelper
 from PDFHelper import PDFHelper
 from WebHelper import WebHelper
+from config import ProjectInfo, feedbacktime
 from geteachinfo import geteachinfo
 from spiderpub import spiderpub
-from timevar import ProjectInfo, feedbacktime
 
 
 def printSpliter(length=25):
@@ -31,10 +31,6 @@ if __name__ == '__main__':
 
     source_group = parser.add_mutually_exclusive_group(required=False)  # True?
 
-    # source_group.add_argument("--script", '-s', action='store_true',
-    #                           help='add --script -s arg running script mode',
-    #                           default=False)
-
     ####################################################################################################
 
     # 下面几个是指定了可以使用的命令行参数 目前只支持三个
@@ -47,7 +43,7 @@ if __name__ == '__main__':
                         help='add --number or -n to specify the page number you wanna to crawl'
                              'For example --number 10. Default number is 10',
                         default=10)
-    
+
     parser.add_argument("--year", "-y", type=int,
                         help='add --year or -y to specify year scale you would to search'
                              'For example --year 10. The Default is Not set',
@@ -60,11 +56,11 @@ if __name__ == '__main__':
     ####################################################################################################
 
     args = parser.parse_args()
-    
+
     if args.keyword.isspace() or args.keyword.isnumeric():
         print("pubmedsoso search keyword error\n")
         sleep(feedbacktime)
-        
+
     print("\n欢迎使用Pubmedsoso 文件检索工具\n\n")
 
     print(f"当前使用的命令行参数 {args.__dict__}\n")
@@ -73,15 +69,12 @@ if __name__ == '__main__':
     try:
         result_num = WebHelper.GetSearchResultNum(args.keyword)
     except Exception as err:
-        raise 
-    
-    sleep(0.3 * feedbacktime)
-
+        raise
 
     if os.getenv("DEBUG"):
-        pass 
+        pass
     else:
-        print("当前关键词在pubmed检索到的相关结果数量为: %s\n"% result_num)
+        print("当前关键词在pubmed检索到的相关结果数量为: %s\n" % result_num)
         print("是否要根据以上参数开始执行程序？y or n\n\n")
         startFlag = input()
         if startFlag == 'y' or startFlag == 'Y' or startFlag == 'Yes':
@@ -119,25 +112,25 @@ if __name__ == '__main__':
     encoded_param = WebHelper.encodeParam(ParamDict)
 
     # 从此处开始爬取数据
-    
+
     printSpliter()
-    
+
     spiderpub(encoded_param, args.page_num, result_num)
-    
+
     printSpliter()
     print("\n\n爬取搜索结果完成，开始执行单篇检索，耗时更久\n\n")
-    
+
     geteachinfo(dbpath)
-    
+
     printSpliter()
     print("\n\n爬取搜索结果完成，开始执行文献下载，耗时更久\n\n")
-    
+
     PDFHelper.PDFBatchDonwload(args.download_num)
 
     ExcelHelper.PD_To_excel(dbpath, override=True)
     print("爬取最终结果信息已经自动保存到excel表格中，文件名为%s" % ExcelHelper.tablename)
     print("爬取的所有文献已经保存到/document/pub/目录下")
     print("爬取程序已经执行完成，自动退出, 哈哈，no errors no warning")
-    
+
     printSpliter()
     sys.exit(0)

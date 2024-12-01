@@ -5,7 +5,7 @@ from time import sleep
 
 import pandas as pd
 
-from timevar import savetime, feedbacktime
+from config import savetime, feedbacktime
 from LogHelper import print_error
 
 
@@ -100,7 +100,7 @@ class ExcelHelper:
             print_error("将从数据库当中读取数据时发生错误: ", e)
         
         try:
-            df.to_excel(cls.savepath, sheet_name=cls.tablename)
+            df.to_excel(cls.savepath, sheet_name=cls.tablename, index=False)
         
         except Exception as e:
             print_error(f"\n爬取数据库信息保存到Excel失败: {e}\n")

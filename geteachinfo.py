@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
+import asyncio
 import os
 import re
 import time
+import platform
 from typing import List
 
+import requests
 from lxml import etree
 
 from DBHelper import DBSaveInfo, DBFetchAllPMID
 from DataType import ABS_PartEnumType, SingleDocInfo, Abstract
 from ExcelHelper import ExcelHelper
-from WebHelper import WebHelper
-from timevar import savetime
 from LogHelper import print_error
+from WebHelper import WebHelper
+from config import savetime, batchsize
 
 
 def parse_abstract(
@@ -37,9 +40,9 @@ def parse_abstract(
     return ret
 
 
-def get_single_info(PMID: str) -> SingleDocInfo:
+def get_single_info(session, PMID: str) -> SingleDocInfo:
     try:
-        html = WebHelper.GetHTML(PMID)
+        html = WebHelper.GetHtml(session, PMID)
     except Exception as e:
         print_error(f"请求失败: {e}")
         return SingleDocInfo()
@@ -49,6 +52,16 @@ def get_single_info(PMID: str) -> SingleDocInfo:
         html_etree = etree.parse("./Pubmed2.html", parser)
     else:
         html_etree = etree.HTML(html)
+    return parse_single_info(html_etree)
+
+def parse_single_info(html_etree: etree.Element):
+    
+    PMID_elem = html_etree.xpath(".//*[@id='full-view-identifiers']//strong[@class='current-id']/text()")
+    if len(PMID_elem) != 0:
+        PMID = PMID_elem[0]
+    else:
+        PMID = None
+    print("PMID:", PMID)
 
     # 提取PMCID和DOI
     PMCID_elem = html_etree.xpath(".//span[@class='identifier pmc']//a[@class='id-link']/text()")
@@ -57,13 +70,13 @@ def get_single_info(PMID: str) -> SingleDocInfo:
     else:
         PMCID = ""
     print("PMCID", PMCID)
-    
+
     doi = ""
-    DOI_elem = html_etree.xpath(".//ul[@id='full-view-identifiers']//span[@class='identifier doi']/a[@class='id-link']/text()")
+    DOI_elem = html_etree.xpath(
+        ".//ul[@id='full-view-identifiers']//span[@class='identifier doi']/a[@class='id-link']/text()")
     if len(DOI_elem) != 0:
         doi = DOI_elem[0].strip()
     print("DOI", doi)
-    
 
     # Affiliation  type list[str]
     Affiliation = []
@@ -94,7 +107,6 @@ def get_single_info(PMID: str) -> SingleDocInfo:
     conclusions = parse_abstract(abstract_chunk, ABS_PartEnumType.Conclusions)
     registration = parse_abstract(abstract_chunk, ABS_PartEnumType.Registration)
     keywords = parse_abstract(abstract_chunk, ABS_PartEnumType.Keywords)
-    
 
     # 一种特殊情况，只有abstract文字
     abstract_text = html_etree.xpath(".//div[@id='eng-abstract']/p/text()")
@@ -129,22 +141,49 @@ def geteachinfo(dbpath):
     PMID_list = DBFetchAllPMID(dbpath, tablename)
     if PMID_list == None:
         print("数据库读取出错，内容为空\n")
-    for i in range(len(PMID_list)):
+    start = time.time()
+    
+    # 使用异步的asyncio和aiohttp来一次性获取所有文献页面的详细情况
+    # 考虑一次性获取的请求数量越多，整个可靠性会下降，我们不妨一次性最多请求50个页面吧,由batchsize，默认50
+    
+    # 注意batchsize的大小
+    
+    results = []
+    for i in range(0, len(PMID_list), batchsize):
+        target = []
+        if i+batchsize > len(PMID_list):
+            target = [pmid.PMID for pmid in PMID_list[i:]]
+        else:
+            target = [pmid.PMID for pmid in PMID_list[i:i+batchsize]]
+        
+        try:
+            if platform.system() == "Windows":
+                asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+                results.extend(asyncio.run(WebHelper.GetAllHtmlAsync(target)))
+        except Exception as e:
+            print_error("异步爬取singleinfo时发生错误: ", e)
+            print_error("默认自动跳过")
+            continue
+
+    print(len(results))
+    end = time.time()
+    print("geteachinfo took %.2f seconds" % (end - start))
+
+    for i in range(len(results)):
         print("当前序号: ", i)
-        singleDocInfo = get_single_info(PMID_list[i].PMID)
+        singleDocInfo = parse_single_info(etree.HTML(results[i]))
 
         DBSaveInfo(singleDocInfo, dbpath)
         # todo
         # 异步执行提供速度
         # todo
         # 通过cache机制来大幅提高单页检索的效率，已经存在的文献直接从本地的数据库进行加载
-        time.sleep(0.1)
     ExcelHelper.PD_To_excel(dbpath)
 
 
 if __name__ == '__main__':
     PMID = "30743289"
-    ret = get_single_info(PMID)
+    ret = get_single_info(requests.Session(), PMID)
     print("PMCID:", ret.PMCID)
     print("PMID:", ret.PMID)
     print("DOI:", ret.doi)
