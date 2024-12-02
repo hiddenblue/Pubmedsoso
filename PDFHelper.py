@@ -11,7 +11,7 @@ from aiohttp import ClientSession, ClientTimeout
 from DBHelper import DBWriter, DBFetchAllFreePMC
 from DataType import TempPMID
 from LogHelper import print_error
-from config import savetime
+from config import savetime, pdfSavePath
 
 
 # 把一些关于PDF相关的操作抽象出来了，方便其他模块调用
@@ -59,7 +59,7 @@ class PDFHelper:
 
     @classmethod
     def GetPDFSavePath(cls, tempid: TempPMID) -> str:
-        return "./document/pub/%s.pdf" % cls.GetPDFFileName(tempid)
+        return f"{pdfSavePath}/{cls.GetPDFFileName(tempid)}.pdf"
 
     @classmethod
     def PDFBatchDownloadEntry(cls, limit):
@@ -159,13 +159,12 @@ class PDFHelper:
         try:
             articleName = cls.GetPDFFileName(tempid)
             # 需要注意的是文件命名中不能含有以上特殊符号，只能去除掉
-            savepath = "./document/pub/%s.pdf" % articleName
+            savepath = "%s/%s.pdf" % (pdfSavePath, articleName)
             file = open(savepath, 'wb')
             print("open success")
             file.write(html)
             file.close()
-            # print("%s.pdf"%name,"文件写入到Pubmed/document/pub/下成功")
-            print("pdf文件写入成功,文件ID为 %s" % tempid.PMCID, "保存路径为Pubmed/document/pub/")
+            print("pdf文件写入成功,文件ID为 %s" % tempid.PMCID, "保存路径为%s" % pdfSavePath)
             return True
         except:
             print_error(f"pdf文件写入失败, 文件ID为 {tempid.PMCID}, 检查路径")
