@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
     # 命令行参数解析
     parser = argparse.ArgumentParser(
-        description="pubmedsoso is python program for crawler article information and download pdf file",
+        description="pubmedsoso is a python program for crawler article information and download pdf file",
         usage="python main.py keyword ")
 
     parser.add_argument('--version', '-v', action='version',
