@@ -222,7 +222,12 @@ def DBFetchAllPMID(dbpath: str, tableName) -> list[TempPMID]:
 
     try:
         sql = "SELECT PMCID, PMID, doctitle FROM %s" % tableName
-        print(sql)
+
+        if len(sql) < 200:
+            print(sql)
+        else:
+            print(sql[:200])
+
         ret = DBReader(dbpath, sql)
         for i in range(len(ret)):
             ret[i] = TempPMID(ret[i][0], ret[i][1], ret[i][2])

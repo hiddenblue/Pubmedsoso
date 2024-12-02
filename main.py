@@ -4,12 +4,13 @@ import os
 import sys
 from time import sleep
 
+from geteachinfo import geteachinfo
+
 from ExcelHelper import ExcelHelper
+from GetSearchResult import spiderpub
 from PDFHelper import PDFHelper
 from WebHelper import WebHelper
-from config import ProjectInfo, feedbacktime
-from geteachinfo import geteachinfo
-from spiderpub import spiderpub
+from config import ProjectInfo, feedbacktime, pdfSavePath
 
 
 def printSpliter(length=25):
@@ -20,7 +21,7 @@ if __name__ == '__main__':
 
     # 命令行参数解析
     parser = argparse.ArgumentParser(
-        description="pubmedsoso is python program for crawler article information and download pdf file",
+        description="pubmedsoso is a python program for crawler article information and download pdf file",
         usage="python main.py keyword ")
 
     parser.add_argument('--version', '-v', action='version',
@@ -75,7 +76,7 @@ if __name__ == '__main__':
         pass
     else:
         print("当前关键词在pubmed检索到的相关结果数量为: %s\n" % result_num)
-        print("是否要根据以上参数开始执行程序？y or n\n\n")
+        print("是否要根据以上参数开始执行程序？y or n\n")
         startFlag = input()
         if startFlag == 'y' or startFlag == 'Y' or startFlag == 'Yes':
             pass
@@ -89,18 +90,14 @@ if __name__ == '__main__':
     printSpliter()
     sleep(0.5)
 
-    if os.path.exists('./document'):
-        if os.path.exists('./document/pub'):
-            print("文件储存目录检查正常，可以储存文件\n")
-        else:
-            os.makedirs('./document/pub')
-            print("成功在当前目录下建立/document/pub文件夹\n")
+    if os.path.exists(pdfSavePath):
+        print("文件储存目录检查正常，可以储存文件\n")
     else:
-        os.makedirs('./document/pub')
-        print("成功在当前目录下建立/document/pub文件夹\n")
+        os.makedirs(pdfSavePath)
+        print(f"成功在当前目录下建立 {pdfSavePath} 文件夹\n")
 
     printSpliter()
-    print("document/pub目录检查完成，开始执行主程序\n")
+    print(f"{pdfSavePath} 目录检查完成，开始执行主程序\n")
 
     sleep(feedbacktime)
 
@@ -125,11 +122,12 @@ if __name__ == '__main__':
     printSpliter()
     print("\n\n爬取搜索结果完成，开始执行文献下载，耗时更久\n\n")
 
-    PDFHelper.PDFBatchDonwload(args.download_num)
+    # PDFHelper.PDFBatchDonwload(args.download_num)
+    PDFHelper.PDFBatchDownloadEntry(args.download_num)
 
     ExcelHelper.PD_To_excel(dbpath, override=True)
     print("爬取最终结果信息已经自动保存到excel表格中，文件名为%s" % ExcelHelper.tablename)
-    print("爬取的所有文献已经保存到/document/pub/目录下")
+    print(f"爬取的所有文献已经保存到{pdfSavePath}目录下")
     print("爬取程序已经执行完成，自动退出, 哈哈，no errors no warning")
 
     printSpliter()

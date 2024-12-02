@@ -17,11 +17,13 @@ class ArticleFreeType(Enum):
     FreeArticle = "FreeArticle"
     FreePMCArticle = "FreePMCArticle"
 
+
 @dataclass
 class TempPMID:
     PMCID: str
     PMID: str
     doctitle: str
+
 
 @dataclass
 class SingleSearchData:
@@ -41,15 +43,15 @@ class SingleSearchData:
         """
         将所有字段用空格连接成一个字符串
         """
-        return ' '.join([            self.doctitle,
-                                     self.short_author,
-                                     self.full_author,
-                                     self.short_journal,
-                                     self.full_journal,
-                                     self.PMID,
-                                     str(self.freemark.value),
-                                     str(self.reviewmark)]
-        )
+        return ' '.join([self.doctitle,
+                         self.short_author,
+                         self.full_author,
+                         self.short_journal,
+                         self.full_journal,
+                         self.PMID,
+                         str(self.freemark.value),
+                         str(self.reviewmark)]
+                        )
 
 
 class SingleDocInfo:

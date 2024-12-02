@@ -3,7 +3,6 @@ import asyncio
 import os
 import re
 import time
-import platform
 from typing import List
 
 import requests
@@ -54,8 +53,8 @@ def get_single_info(session, PMID: str) -> SingleDocInfo:
         html_etree = etree.HTML(html)
     return parse_single_info(html_etree)
 
+
 def parse_single_info(html_etree: etree.Element):
-    
     PMID_elem = html_etree.xpath(".//*[@id='full-view-identifiers']//strong[@class='current-id']/text()")
     if len(PMID_elem) != 0:
         PMID = PMID_elem[0]
@@ -142,24 +141,24 @@ def geteachinfo(dbpath):
     if PMID_list == None:
         print("数据库读取出错，内容为空\n")
     start = time.time()
-    
+
     # 使用异步的asyncio和aiohttp来一次性获取所有文献页面的详细情况
     # 考虑一次性获取的请求数量越多，整个可靠性会下降，我们不妨一次性最多请求50个页面吧,由batchsize，默认50
-    
+
     # 注意batchsize的大小
-    
+
     results = []
+    print("Geteachinfo batchsize: ", batchsize)
     for i in range(0, len(PMID_list), batchsize):
         target = []
-        if i+batchsize > len(PMID_list):
+        if i + batchsize > len(PMID_list):
             target = [pmid.PMID for pmid in PMID_list[i:]]
         else:
-            target = [pmid.PMID for pmid in PMID_list[i:i+batchsize]]
-        
+            target = [pmid.PMID for pmid in PMID_list[i:i + batchsize]]
+
         try:
-            if platform.system() == "Windows":
-                asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-                results.extend(asyncio.run(WebHelper.GetAllHtmlAsync(target)))
+
+            results.extend(asyncio.run(WebHelper.GetAllHtmlAsync(target)))
         except Exception as e:
             print_error("异步爬取singleinfo时发生错误: ", e)
             print_error("默认自动跳过")
@@ -167,7 +166,7 @@ def geteachinfo(dbpath):
 
     print(len(results))
     end = time.time()
-    print("geteachinfo took %.2f seconds" % (end - start))
+    print("geteachinfo() takes %.2f seconds" % (end - start))
 
     for i in range(len(results)):
         print("当前序号: ", i)

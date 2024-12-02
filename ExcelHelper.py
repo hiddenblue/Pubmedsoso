@@ -5,8 +5,8 @@ from time import sleep
 
 import pandas as pd
 
-from config import savetime, feedbacktime
 from LogHelper import print_error
+from config import savetime, feedbacktime
 
 
 class ExcelHelper:
@@ -91,31 +91,30 @@ class ExcelHelper:
                 FROM {cls.tablename}'''
                 df = pd.read_sql(sql, conn)
 
-
             freemark_column = df['freemark']
             print(freemark_column)
             df.rename(columns=cls.rename_dict, inplace=True)
-            
+
         except Exception as e:
             print_error("将从数据库当中读取数据时发生错误: ", e)
-        
+
         try:
             df.to_excel(cls.savepath, sheet_name=cls.tablename, index=False)
-        
+
         except Exception as e:
             print_error(f"\n爬取数据库信息保存到Excel失败: {e}\n")
-            
 
 
 if __name__ == "__main__":
-    """
+    import DBHelper
+
     dbpath: str = 'pubmedsql'
     table_list: list = DBHelper.DBTableFinder(dbpath)
     if not table_list:
         print("目标数据库不存在或者内容为空，请检查数据库，即将退出")
         sleep(feedbacktime)
         sys.exit(-1)
-        
+
     print("\n")
     while True:
         sleep(0.5)
@@ -133,7 +132,7 @@ if __name__ == "__main__":
             if 1 <= x <= len(table_list):
                 index = table_list[x - 1]
                 savetime = index[6:]
-                ExcelHelper.to_excel(dbpath)
+                ExcelHelper.PD_To_excel(dbpath)
                 print("此次保存执行完成，下一个循环")
                 sleep(3)
                 print('----' * 20, "\n")
@@ -146,7 +145,3 @@ if __name__ == "__main__":
             sleep(3)
             print_error('----' * 20, '\n')
     os.system("pause")
-    """
-
-    dbpath: str = 'pubmedsql'
-    ExcelHelper.PD_To_excel(dbpath=dbpath)
