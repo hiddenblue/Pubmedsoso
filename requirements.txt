@@ -1,0 +1,6 @@
+asyncio~=3.4.3
+aiohttp~=3.11.8
+requests~=2.32.3
+lxml~=5.3.0
+pandas~=2.2.3
+openpyxl~=3.1.5
