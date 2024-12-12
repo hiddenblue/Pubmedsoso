@@ -124,7 +124,7 @@ def parse_single_info(html_etree: etree.Element):
         keywords=keywords,
         abstract=abstract_text,
     )
-    print("abstract", abstract_obj.to_complete_abs())
+    print("abstract: \n", abstract_obj.to_complete_abs())
 
     return SingleDocInfo(
         PMCID=PMCID,
@@ -152,15 +152,14 @@ def geteachinfo(dbpath):
     results = []
     print("Geteachinfo batchsize: ", batchsize)
     for i in range(0, len(PMID_list), batchsize):
-        target = []
+        target_pmid: [str] = []
         if i + batchsize > len(PMID_list):
-            target = [pmid.PMID for pmid in PMID_list[i:]]
+            target_pmid = [pmid.PMID for pmid in PMID_list[i:]]
         else:
-            target = [pmid.PMID for pmid in PMID_list[i:i + batchsize]]
+            target_pmid = [pmid.PMID for pmid in PMID_list[i:i + batchsize]]
 
         try:
-
-            results.extend(asyncio.run(WebHelper.GetAllHtmlAsync(target)))
+            results.extend(asyncio.run(WebHelper.GetAllHtmlAsync(target_pmid)))
         except Exception as e:
             print_error("异步爬取singleinfo时发生错误: ", e)
             print_error("默认自动跳过")

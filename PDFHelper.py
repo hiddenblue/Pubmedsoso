@@ -68,43 +68,50 @@ class PDFHelper:
         tablename = 'pubmed%s' % projConfig.savetime
         dbpath = 'pubmedsql'
         # 注意这个列表的数据类型，和名称并不是相符的
-        PMID_list: [TempPMID] = DBFetchAllFreePMC(dbpath, tablename)
+        # 这个返回的结果是有免费全文的，包括 FreeArticle 和 FreePMCArticle 两类
+        free_article_list: [TempPMID] = DBFetchAllFreePMC(dbpath, tablename)
 
-        temp_list: [TempPMID] = [item for item in PMID_list if item.PMCID != ""]
+        free_pmc_list: [TempPMID] = [item for item in free_article_list if item.PMCID != ""]
 
         # 过滤掉已经存在于本地的文献
-        PMCID_list = []  # target pdf list to be downloaded
-        for item in temp_list:
+        target_pmc_list: [TempPMID] = []  # target pdf list to be downloaded
+        
+        for item in free_pmc_list:
             if cls.__IsPDFExist(item):
                 # 存在于目录当中直接更新就行了
                 cls.PDFUpdateDB(item, cls.__GetPDFSavePath(item), dbpath)
                 print(f"PDF: {cls.__GetPDFFileName(item)} 在保存目录当中已存在，跳过下载")
                 # 还没有下载就放到待下载列表当中
             else:
-                PMCID_list.append(item)
+                target_pmc_list.append(item)
 
         # limit the dowload number
-        PMCID_list = PMCID_list[:limit]
+        # 这两个内容的index是相互对应的
+        target_pmc_list: [TempPMID] = target_pmc_list[:limit]
+        target_pmcid_list: [str] = [tempid.PMCID for tempid in target_pmc_list]
         
-        pdf_list = asyncio.run(cls.PDFBatchDonwloadAsync(PMCID_list))
+        # 不用担心输入和返回的匹配的位置对应问题
+        pdf_list: [Optional[bytes]] = asyncio.run(cls.PDFBatchDonwloadAsync(target_pmcid_list))
 
-        for item in pdf_list:
-            if item[1] == None:
-                print_error("%s.pdf" % item[1], "从目标站获取pdf数据失败")
+        for index, pdf_content  in enumerate(pdf_list):
+            temppmid = target_pmc_list[index]
+            if pdf_content == None:
+                print_error("PMCID: %s" % temppmid.PMCID, "从目标站获取pdf数据失败")
             else:
-                status = PDFHelper.PDFSaveFile(item[1], item[0])
+
+                status = PDFHelper.PDFSaveFile(pdf_content, temppmid)
                 if (status == True):
                     # 将pdf文件名称以及存储位置等相关信息添加到sqlite数据库当中
-                    PDFHelper.PDFUpdateDB(item[0], cls.__GetPDFSavePath(item[0]), dbpath)
+                    PDFHelper.PDFUpdateDB(temppmid, cls.__GetPDFSavePath(temppmid), dbpath)
                 else:
-                    print_error("保存pdf文件发生错误，自动跳过该文献PMCID为 %s" % item[0].PMCID)
+                    print_error("保存pdf文件发生错误，自动跳过该文献PMCID为 %s" % temppmid.PMCID)
                     continue
 
     @classmethod
-    async def PDFBatchDonwloadAsync(cls, PMCID_list: list[TempPMID]) -> list[tuple[TempPMID, Optional[bytes]]]:
+    async def PDFBatchDonwloadAsync(cls, PMCID_list: list[str]) -> list[Optional[bytes]]:
         pdf_batchsize = 5
 
-        pdf_list: list[tuple[TempPMID, Optional[bytes]]] = []
+        pdf_list: list[Optional[bytes]] = []
 
         for i in range(0, len(PMCID_list), pdf_batchsize):
             target = []
@@ -117,7 +124,7 @@ class PDFHelper:
             async with aiohttp.ClientSession(timeout=ClientTimeout(30)) as session:
                 start = time.time()
 
-                tasks = [asyncio.create_task(cls.PDFdownloadAsync(session, tempPMID)) for tempPMID in target]
+                tasks = [asyncio.create_task(cls.PDFdownloadAsync(session, PMCID)) for PMCID in target]
                 results = await asyncio.gather(*tasks)
                 end = time.time()
 
@@ -126,8 +133,8 @@ class PDFHelper:
         return pdf_list
 
     @classmethod
-    async def PDFdownloadAsync(cls, session: ClientSession, tempid: TempPMID) -> tuple[TempPMID, Optional[bytes]]:
-        downloadUrl = cls.baseurl + "pmc/articles/" + tempid.PMCID + "/pdf/main.pdf"
+    async def PDFdownloadAsync(cls, session: ClientSession, PMCID:str) -> Optional[bytes]:
+        downloadUrl = cls.baseurl + "pmc/articles/" + PMCID + "/pdf/main.pdf"
         semaphore = asyncio.Semaphore(5)
 
         async with semaphore:
@@ -135,17 +142,17 @@ class PDFHelper:
                 response = await session.get(downloadUrl, headers=cls.headers)
                 content = await response.read()
                 print("%s.pdf" % tempid, "从目标站获取pdf数据成功")
-                return tempid, content
+                return content
 
             except (aiohttp.ClientResponseError, aiohttp.ClientHttpProxyError) as e:
                 cls.handle_error(e)
                 print_error("%s.pdf" % tempid, "从目标站获取pdf数据失败")
-                return tempid, None
+                return None
 
             except Exception as e:
                 cls.handle_error(e)
                 print_error("%s.pdf" % tempid, "从目标站获取pdf数据失败")
-                return tempid, None
+                return None
 
     @classmethod
     def PDFSaveFile(cls, html, tempid: TempPMID) -> bool:
