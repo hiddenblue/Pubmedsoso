@@ -13,7 +13,9 @@ from DataType import ABS_PartEnumType, SingleDocInfo, Abstract
 from ExcelHelper import ExcelHelper
 from LogHelper import print_error
 from WebHelper import WebHelper
-from config import savetime, batchsize
+from config import projConfig
+
+batchsize = projConfig.batchsize
 
 
 def parse_abstract(
@@ -135,7 +137,7 @@ def parse_single_info(html_etree: etree.Element):
 
 
 def geteachinfo(dbpath):
-    tablename = 'pubmed%s' % savetime
+    tablename = 'pubmed%s' % projConfig.savetime
 
     PMID_list = DBFetchAllPMID(dbpath, tablename)
     if PMID_list == None:

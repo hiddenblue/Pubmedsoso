@@ -10,7 +10,9 @@ from ExcelHelper import ExcelHelper
 from GetSearchResult import spiderpub
 from PDFHelper import PDFHelper
 from WebHelper import WebHelper
-from config import ProjectInfo, feedbacktime, pdfSavePath
+from config import ProjectInfo, projConfig
+
+feedbacktime = projConfig.feedbacktime
 
 
 def printSpliter(length=25):
@@ -22,9 +24,9 @@ if __name__ == '__main__':
     # 命令行参数解析
     parser = argparse.ArgumentParser(
         description="pubmedsoso is a python program for crawler article information and download pdf file",
-        usage="python main.py keyword ")
+        usage="python main.py keyword")
 
-    parser.add_argument('--version', '-v', action='version',
+    parser.add_argument('-v', '--version', action='version',
                         version=f'\nCurrent the {ProjectInfo.ProjectName}\n\n version: {ProjectInfo.VersionInfo}\n' +
                                 f'Last updated date: {ProjectInfo.LastUpdate} \n' +
                                 f'Author: {ProjectInfo.AuthorName} \n',
@@ -40,33 +42,48 @@ if __name__ == '__main__':
     parser.add_argument("keyword", type=str,
                         help='specify the keywords to search pubmed\n For example "headache"')
 
-    parser.add_argument("--page_num", "-n", type=int,
-                        help='add --number or -n to specify the page number you wanna to crawl'
-                             'For example --number 10. Default number is 10',
+    parser.add_argument("-n", "--pagenum", type=int, metavar='',
+                        help='add --pagenum or -n to specify the page number of info you wanna to crawl'
+                             'For example --pagenum 10. Default number is 10',
                         default=10)
 
-    parser.add_argument("--year", "-y", type=int,
+    parser.add_argument("-y", "--year", type=int, metavar='',
                         help='add --year or -y to specify year scale you would to search'
                              'For example --year 10. The Default is Not set',
                         default=None)
 
-    parser.add_argument("--download_num", "-d", type=int,
-                        help='add --download_num or -d to specify the doc number you wanna to download'
+    parser.add_argument("-d", "--downloadnum", type=int, metavar='',
+                        help='add --downloadnum or -d to specify the number of pdf you wanna to download'
                              'For example -d 10. Default number is 10',
                         default=10)
+    
+    parser.add_argument("-D", "--directory", type=str,  metavar='',
+                        help='add --directory or -D specify the save path of pdf file'
+                        'For example, -D ./output. Default path is ./document/pub'
+                        'you can overrider the default path in config.py',
+                        default='./document/pub')
     ####################################################################################################
 
     args = parser.parse_args()
+
+    # print the hello info
+    ProjectInfo.printProjectInfo()
+    print("\n")
+    
+    # check the directory variable. the path variable from cli is preferred.
+    # the default pdf saving directory path is from config.py which is './document/pub'
+    if args.directory is not None:
+        projConfig.pdfSavePath = args.directory
 
     if args.keyword.isspace() or args.keyword.isnumeric():
         print("pubmedsoso search keyword error\n")
         sleep(feedbacktime)
 
-    print("\n欢迎使用Pubmedsoso 文件检索工具\n\n")
 
-    print(f"当前使用的命令行参数 {args.__dict__}\n")
+
+    print(f"Current commandline parameters: {args.__dict__}\n")
     print(
-        f"当前使用的命令行参数 搜索关键词: \"{args.keyword}\", 文献信息检索数量: {args.page_num}, 年份：{args.year}, 文献下载数量:{args.download_num}\n")
+        f"当前使用的命令行参数 搜索关键词: \"{args.keyword}\", 文献信息检索数量: {args.pagenum}, 年份：{args.year}, 文献下载数量: {args.downloadnum}, 下载文献的存储目录: {projConfig.pdfSavePath}\n")
     try:
         result_num = WebHelper.GetSearchResultNum(args.keyword)
     except Exception as err:
@@ -90,14 +107,14 @@ if __name__ == '__main__':
     printSpliter()
     sleep(0.5)
 
-    if os.path.exists(pdfSavePath):
+    if os.path.exists(projConfig.pdfSavePath):
         print("文件储存目录检查正常，可以储存文件\n")
     else:
-        os.makedirs(pdfSavePath)
-        print(f"成功在当前目录下建立 {pdfSavePath} 文件夹\n")
+        os.makedirs(projConfig.pdfSavePath)
+        print(f"成功在当前目录下建立 {projConfig.pdfSavePath} 文件夹\n")
 
     printSpliter()
-    print(f"{pdfSavePath} 目录检查完成，开始执行主程序\n")
+    print(f"{projConfig.pdfSavePath} 目录检查完成，开始执行主程序\n")
 
     sleep(feedbacktime)
 
@@ -112,7 +129,7 @@ if __name__ == '__main__':
 
     printSpliter()
 
-    spiderpub(encoded_param, args.page_num, result_num)
+    spiderpub(encoded_param, args.pagenum, result_num)
 
     printSpliter()
     print("\n\n爬取搜索结果完成，开始执行单篇检索，耗时更久\n\n")
@@ -123,11 +140,11 @@ if __name__ == '__main__':
     print("\n\n爬取搜索结果完成，开始执行文献下载，耗时更久\n\n")
 
     # PDFHelper.PDFBatchDonwload(args.download_num)
-    PDFHelper.PDFBatchDownloadEntry(args.download_num)
+    PDFHelper.PDFBatchDownloadEntry(args.downloadnum)
 
     ExcelHelper.PD_To_excel(dbpath, override=True)
     print("爬取最终结果信息已经自动保存到excel表格中，文件名为%s" % ExcelHelper.tablename)
-    print(f"爬取的所有文献已经保存到{pdfSavePath}目录下")
+    print(f"爬取的所有文献已经保存到{projConfig.pdfSavePath}目录下")
     print("爬取程序已经执行完成，自动退出, 哈哈，no errors no warning")
 
     printSpliter()

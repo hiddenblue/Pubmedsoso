@@ -10,7 +10,7 @@ import DBHelper
 from DataType import ArticleFreeType, SingleSearchData
 from LogHelper import print_error
 from WebHelper import WebHelper
-from config import savetime
+from config import projConfig
 
 
 def parseSearchHtml(html: str) -> Optional[List[SingleSearchData]]:
@@ -119,7 +119,7 @@ def SaveSearchData(datalist: List[SingleSearchData], dbpath: str) -> None:
         datalist (List[SingleSearchData]): List of parsed search data.
         dbpath (str): Path to the SQLite database.
     """
-    tablename = f'pubmed{savetime}'
+    tablename = f'pubmed{projConfig.savetime}'
     for singleSearchData in datalist:
         try:
             sql = f"""
@@ -182,8 +182,8 @@ def spiderpub(parameter: str, page_limit: int, resultNum: int) -> None:
                 datalist.extend(SingleSearchPageData)
 
     dbpath = 'pubmedsql'
-    tablename = f'pubmed{savetime}'
-    txtname = f"pubmed{savetime}.txt"
+    tablename = f'pubmed{projConfig.savetime}'
+    txtname = f"pubmed{projConfig.savetime}.txt"
 
     try:
         DBHelper.DBCreater(dbpath)

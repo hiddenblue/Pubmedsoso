@@ -11,7 +11,7 @@ from aiohttp import ClientSession, ClientTimeout
 from DBHelper import DBWriter, DBFetchAllFreePMC
 from DataType import TempPMID
 from LogHelper import print_error
-from config import savetime, pdfSavePath
+from config import projConfig
 
 
 # 把一些关于PDF相关的操作抽象出来了，方便其他模块调用
@@ -45,21 +45,21 @@ class PDFHelper:
         print_error("Error occured: %s" % e)
 
     @staticmethod
-    def IsFileExist(path: str) -> bool:
+    def __IsFileExist(path: str) -> bool:
         return Path(path).exists()
 
     @classmethod
-    def IsPDFExist(cls, tempid) -> bool:
-        savepath = cls.GetPDFSavePath(tempid)
-        return PDFHelper.IsFileExist(savepath)
+    def __IsPDFExist(cls, tempid) -> bool:
+        savepath = cls.__GetPDFSavePath(tempid)
+        return PDFHelper.__IsFileExist(savepath)
 
     @classmethod
-    def GetPDFFileName(cls, tempid: TempPMID) -> str:
+    def __GetPDFFileName(cls, tempid: TempPMID) -> str:
         return re.sub(r'[< >/\\|:"*?]', ' ', tempid.doctitle)
 
     @classmethod
-    def GetPDFSavePath(cls, tempid: TempPMID) -> str:
-        return f"{pdfSavePath}/{cls.GetPDFFileName(tempid)}.pdf"
+    def __GetPDFSavePath(cls, tempid: TempPMID) -> str:
+        return f"{projConfig.pdfSavePath}/{cls.__GetPDFFileName(tempid)}.pdf"
 
     @classmethod
     def PDFBatchDownloadEntry(cls, limit):
@@ -67,7 +67,7 @@ class PDFHelper:
         异步批量处理的pdf下载函数
         感觉写得稀烂啊
         """
-        tablename = 'pubmed%s' % savetime
+        tablename = 'pubmed%s' % projConfig.savetime
         count = 0
         dbpath = 'pubmedsql'
         PMID_list: [TempPMID] = DBFetchAllFreePMC(dbpath, tablename)
@@ -77,10 +77,10 @@ class PDFHelper:
         # 过滤掉已经存在于本地的文献
         PMCID_list = []
         for item in temp_list:
-            if cls.IsPDFExist(item):
+            if cls.__IsPDFExist(item):
                 # 存在于目录当中直接更新就行了
-                cls.PDFUpdateDB(item, cls.GetPDFSavePath(item), dbpath)
-                print(f"PDF: {cls.GetPDFFileName(item)} 在保存目录当中已存在，跳过下载")
+                cls.PDFUpdateDB(item, cls.__GetPDFSavePath(item), dbpath)
+                print(f"PDF: {cls.__GetPDFFileName(item)} 在保存目录当中已存在，跳过下载")
             else:
                 PMCID_list.append(item)
 
@@ -95,7 +95,7 @@ class PDFHelper:
                 status = PDFHelper.PDFSaveFile(item[1], item[0])
                 if (status == True):
                     # 将pdf文件名称以及存储位置等相关信息添加到sqlite数据库当中
-                    PDFHelper.PDFUpdateDB(item[0], cls.GetPDFSavePath(item[0]), dbpath)
+                    PDFHelper.PDFUpdateDB(item[0], cls.__GetPDFSavePath(item[0]), dbpath)
                 else:
                     print_error("保存pdf文件发生错误，自动跳过该文献PMCID为 %s" % item[0].PMCID)
                     continue
@@ -153,18 +153,18 @@ class PDFHelper:
         将pdf保存到本地文件的功能
         暂时还不确定能否支持异步，就先用同步版本了
         """
-        tablename = 'pubmed%s' % savetime
+        tablename = 'pubmed%s' % projConfig.savetime
         # pdf = html.decode("utf-8")  # 使用Unicode8对二进制网页进行解码，直接写入文件就不需要解码了
 
         try:
-            articleName = cls.GetPDFFileName(tempid)
+            articleName = cls.__GetPDFFileName(tempid)
             # 需要注意的是文件命名中不能含有以上特殊符号，只能去除掉
-            savepath = "%s/%s.pdf" % (pdfSavePath, articleName)
+            savepath = "%s/%s.pdf" % (projConfig.pdfSavePath, articleName)
             file = open(savepath, 'wb')
             print("open success")
             file.write(html)
             file.close()
-            print("pdf文件写入成功,文件ID为 %s" % tempid.PMCID, "保存路径为%s" % pdfSavePath)
+            print("pdf文件写入成功,文件ID为 %s" % tempid.PMCID, "保存路径为%s" % projConfig.pdfSavePath)
             return True
         except:
             print_error(f"pdf文件写入失败, 文件ID为 {tempid.PMCID}, 检查路径")
@@ -172,7 +172,7 @@ class PDFHelper:
 
     @classmethod
     def PDFUpdateDB(cls, tempid: TempPMID, savepath: str, dbpath: str) -> bool:
-        tablename = 'pubmed%s' % savetime
+        tablename = 'pubmed%s' % projConfig.savetime
         try:
             writeSql = " UPDATE %s SET savepath = ? WHERE PMCID =?" % tablename
             param = (savepath, tempid.PMCID)

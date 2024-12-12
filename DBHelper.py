@@ -4,7 +4,7 @@ from typing import List, Union
 from DataType import Publication
 from DataType import SingleDocInfo, TempPMID
 from LogHelper import print_error
-from config import savetime
+from config import projConfig 
 
 
 # 把一些关于sqlite3相关的操作抽象出来了，方便其他模块调用
@@ -173,7 +173,7 @@ def DBWriter(dbpath: str, sql: str, params: tuple = None) -> bool:
 
 # 这个函数是用来保存文献打开页面获取到的单独的信息的
 def DBSaveInfo(singleinfo: SingleDocInfo, dbpath: str):
-    tablename = 'pubmed%s' % savetime
+    tablename = 'pubmed%s' % projConfig.savetime
 
     ret = False
     try:
