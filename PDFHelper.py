@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Optional
 
 import aiohttp
-import requests
 from aiohttp import ClientSession, ClientTimeout
 
 from DBHelper import DBWriter, DBFetchAllFreePMC
@@ -20,7 +19,6 @@ from config import projConfig
 
 class PDFHelper:
     baseurl = "http://www.ncbi.nlm.nih.gov/"
-    session = requests.Session()
     # 没有采用https是因为听说https的审查会增加延时
     headers = {
         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
@@ -68,24 +66,26 @@ class PDFHelper:
         感觉写得稀烂啊
         """
         tablename = 'pubmed%s' % projConfig.savetime
-        count = 0
         dbpath = 'pubmedsql'
+        # 注意这个列表的数据类型，和名称并不是相符的
         PMID_list: [TempPMID] = DBFetchAllFreePMC(dbpath, tablename)
 
-        temp_list = [item for item in PMID_list if item.PMCID != ""]
+        temp_list: [TempPMID] = [item for item in PMID_list if item.PMCID != ""]
 
         # 过滤掉已经存在于本地的文献
-        PMCID_list = []
+        PMCID_list = []  # target pdf list to be downloaded
         for item in temp_list:
             if cls.__IsPDFExist(item):
                 # 存在于目录当中直接更新就行了
                 cls.PDFUpdateDB(item, cls.__GetPDFSavePath(item), dbpath)
                 print(f"PDF: {cls.__GetPDFFileName(item)} 在保存目录当中已存在，跳过下载")
+                # 还没有下载就放到待下载列表当中
             else:
                 PMCID_list.append(item)
 
         # limit the dowload number
         PMCID_list = PMCID_list[:limit]
+        
         pdf_list = asyncio.run(cls.PDFBatchDonwloadAsync(PMCID_list))
 
         for item in pdf_list:

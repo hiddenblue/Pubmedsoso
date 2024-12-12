@@ -101,17 +101,17 @@ class Abstract:
         """
         parts = []
         if self.background:
-            parts.append(f"Background: {self.background.strip()}")
+            parts.append(self.background.strip())
         if self.methods:
-            parts.append(f"Methods: {self.methods.strip()}")
+            parts.append(self.methods.strip())
         if self.results:
-            parts.append(f"Results: {self.results.strip()}")
+            parts.append(self.results.strip())
         if self.conclusions:
-            parts.append(f"Conclusions: {self.conclusions.strip()}")
+            parts.append(self.conclusions.strip())
         if self.registration:
-            parts.append(f"Registration: {self.registration.strip()}")
+            parts.append(self.registration.strip())
         if self.keywords:
-            parts.append(f"Keywords: {self.keywords.strip()}")
+            parts.append(self.keywords.strip())
         if self.abstract:
             parts.append(f"Abstract: {self.abstract.strip()}")
         return "\n".join(parts)

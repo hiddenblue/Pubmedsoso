@@ -44,7 +44,7 @@ jobs:
           dir out3  # 在 Windows 上列出 out3 目录的内容
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: nuitka-build
           path: out3/main.exe
