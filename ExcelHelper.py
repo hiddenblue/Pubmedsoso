@@ -6,12 +6,13 @@ from time import sleep
 import pandas as pd
 
 from LogHelper import print_error
-from config import savetime, feedbacktime
+from config import projConfig
+feedbacktime = projConfig.feedbacktime
 
 
 class ExcelHelper:
-    savepath: str = f'./pubmed-{savetime}.xlsx'
-    tablename: str = f'pubmed{savetime}'
+    savepath: str = f'./pubmed-{projConfig.savetime}.xlsx'
+    tablename: str = f'pubmed{projConfig.savetime}'
     # 原始列名和新列名组成的字典
     rename_dict = {
         'id': '序号',
@@ -131,6 +132,7 @@ if __name__ == "__main__":
                 break
             if 1 <= x <= len(table_list):
                 index = table_list[x - 1]
+                # todo
                 savetime = index[6:]
                 ExcelHelper.PD_To_excel(dbpath)
                 print("此次保存执行完成，下一个循环")
