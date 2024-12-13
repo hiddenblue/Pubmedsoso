@@ -47,8 +47,8 @@ if __name__ == '__main__':
                              'For example --pagenum 10. Default number is 10',
                         default=10)
 
-    parser.add_argument("-y", "--year", type=int, metavar='',
-                        help='add --year or -y to specify year scale you would to search'
+    parser.add_argument("-y", "--year", type=int, choices=(1, 5, 10), metavar='',
+                        help='add --year or -y and a digit in "1" "5" or "10" to specify year scale you would to search'
                              'For example --year 10. The Default is Not set',
                         default=None)
 
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     print(
         f"当前使用的命令行参数 搜索关键词: \"{args.keyword}\", 文献信息检索数量: {args.pagenum}, 年份：{args.year}, 文献下载数量: {args.downloadnum}, 下载文献的存储目录: {projConfig.pdfSavePath}\n")
     try:
-        result_num = WebHelper.GetSearchResultNum(args.keyword)
+        result_num = WebHelper.GetSearchResultNum(args.keyword, args.year)
     except Exception as err:
         raise
 
@@ -113,7 +113,7 @@ if __name__ == '__main__':
             pass
         if startFlag in ["n", "N", "No", "no"]:
             print("程序终止执行\n\n")
-            sleep(feedbacktime)
+            sleep(feedbacktime * 0.5)
             sys.exit()
 
     printSpliter()

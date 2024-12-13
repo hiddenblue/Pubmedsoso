@@ -29,7 +29,7 @@ class WebHelper:
         search_keywords_dict['term'] = keyword.strip()
 
         if year:
-            search_keywords_dict['year'] = year
+            search_keywords_dict['filter'] = f'datesearch.y_{year}'
 
         # substitute the page size param with 50
         search_keywords_dict['size'] = 50
@@ -100,9 +100,9 @@ class WebHelper:
             return None
 
     @staticmethod
-    def GetSearchResultNum(keyword: str) -> int:
+    def GetSearchResultNum(keyword: str, year: int = None) -> int:
         # 根据上面输入的关键词初始化生成url参数
-        ParamDict = WebHelper.createParamDcit(keyword)
+        ParamDict = WebHelper.createParamDcit(keyword, year=year)
         encoded_param = WebHelper.encodeParam(ParamDict)
         try:
             html = WebHelper.getSearchHtml(encoded_param)
