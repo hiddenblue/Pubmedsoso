@@ -21,10 +21,8 @@ class WebHelper:
     session = requests.Session()
 
     @classmethod
-    def createParamDcit(cls, keyword, year: Union[int, None] = None):
-
-        if " " in keyword:
-            keyword = keyword.replace(" ", "%20")
+    def createParamDcit(cls, keyword:str, year: Union[int, None] = None):
+                
         search_keywords_dict = {}
         search_keywords_dict['term'] = keyword.strip()
 
@@ -35,9 +33,9 @@ class WebHelper:
         search_keywords_dict['size'] = 50
 
         return search_keywords_dict
-
-    @staticmethod
-    def encodeParam(param: dict) -> str:
+    
+    @classmethod
+    def encodeParam(cls, param: dict) -> str:
         return urllib.parse.urlencode(param)
 
     @staticmethod

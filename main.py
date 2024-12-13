@@ -10,6 +10,7 @@ from GetSearchResult import spiderpub
 from utils.ExcelHelper import ExcelHelper
 from utils.PDFHelper import PDFHelper
 from utils.WebHelper import WebHelper
+from utils.LogHelper import print_error
 from config import ProjectInfo, projConfig
 
 feedbacktime = projConfig.feedbacktime
@@ -61,7 +62,7 @@ if __name__ == '__main__':
                         help='add --directory or -D specify the save path of pdf file'
                         'For example, -D ./output. Default path is ./document/pub'
                         'you can overrider the default path in config.py',
-                        default='./document/pub')
+                        default=None)
 
     parser.add_argument("-p", "--pmid", type=str, metavar='',
 
@@ -88,12 +89,18 @@ if __name__ == '__main__':
     # the default pdf saving directory path is from config.py which is './document/pub'
     if args.directory is not None:
         projConfig.pdfSavePath = args.directory
+    else:
+        if projConfig.pdfSavePath is None:
+            print_error("Error" "Neither directory of cli nor pdfSavePath in config.py is None.")
+            print_error("Please check your config.py and cli parameter." "The program will exit.")
+            sys.exit()
 
     if args.keyword.isspace() or args.keyword.isnumeric():
         print("pubmedsoso search keyword error\n")
+        print_error("the program will exit.")
         sleep(feedbacktime)
-
-
+    
+    ######################################################################################################
 
     print(f"Current commandline parameters: {args.__dict__}\n")
     print(
@@ -115,6 +122,8 @@ if __name__ == '__main__':
             print("程序终止执行\n\n")
             sleep(feedbacktime * 0.5)
             sys.exit()
+
+    ######################################################################################################
 
     printSpliter()
     print("程序已运行，开始检查数据储存目录\n")
