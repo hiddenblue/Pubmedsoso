@@ -1,15 +1,17 @@
 name: Nuitka Packaging
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
-      - master
+      - dev
   workflow_dispatch:
 
 jobs:
-  build:
+  build-windows:
     runs-on: windows-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -17,15 +19,7 @@ jobs:
       - name: Set up Python 3.9
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'  # 根据你的项目需求选择合适的 Python 版本
-
-      - name: Cache Python dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          python-version: '3.9'
 
       - name: Install dependencies
         run: |
@@ -35,16 +29,79 @@ jobs:
       - name: Install Nuitka
         run: pip install nuitka
 
-      - name: Build with Nuitka
+      - name: Build with Nuitka (Windows)
         run: |
-          nuitka --onefile --output-dir=out3 --assume-yes-for-downloads main.py
+          nuitka --onefile --windows-icon-from-ico=./assets/icon.png --output-dir=out_windows --output-filename=pubmedsoso.exe --assume-yes-for-downloads main.py
 
       - name: Check output directory
-        run: |
-          dir out3  # 在 Windows 上列出 out3 目录的内容
+        run: dir out_windows
 
-      - name: Upload build artifacts
+      - name: Upload build artifacts (Windows)
         uses: actions/upload-artifact@v4
         with:
-          name: nuitka-build
-          path: out3/main.exe
+          name: nuitka-build-windows
+          path: out_windows/pubmedsoso.exe
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Nuitka
+        run: pip install nuitka
+
+      - name: Build with Nuitka (macOS)
+        run: |
+          nuitka --onefile --macos-create-app-bundle --macos-app-icon=./assets/icon.png --output-dir=out_macos --output-filename=pubmedsoso.darwin.bin --assume-yes-for-downloads main.py
+
+      - name: Check output directory
+        run: ls out_macos
+
+      - name: Upload build artifacts (macOS)
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuitka-build-macos
+          path: out_macos/pubmedsoso.darwin.bin
+
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Nuitka
+        run: pip install nuitka
+
+      - name: Build with Nuitka (Linux)
+        run: |
+          nuitka --onefile --output-dir=out_linux --output-filename=pubmedsoso.linux.bin --assume-yes-for-downloads main.py
+
+      - name: Check output directory
+        run: ls out_linux
+
+      - name: Upload build artifacts (Linux)
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuitka-build-linux
+          path: out_linux/pubmedsoso.linux.bin
