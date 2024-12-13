@@ -4,12 +4,13 @@ import os
 import sys
 from time import sleep
 
-from geteachinfo import geteachinfo
-
-from ExcelHelper import ExcelHelper
+from GetEachInfo import geteachinfo
 from GetSearchResult import spiderpub
-from PDFHelper import PDFHelper
-from WebHelper import WebHelper
+
+from utils.ExcelHelper import ExcelHelper
+from utils.PDFHelper import PDFHelper
+from utils.WebHelper import WebHelper
+from utils.LogHelper import print_error
 from config import ProjectInfo, projConfig
 
 feedbacktime = projConfig.feedbacktime
@@ -47,8 +48,8 @@ if __name__ == '__main__':
                              'For example --pagenum 10. Default number is 10',
                         default=10)
 
-    parser.add_argument("-y", "--year", type=int, metavar='',
-                        help='add --year or -y to specify year scale you would to search'
+    parser.add_argument("-y", "--year", type=int, choices=(1, 5, 10), metavar='',
+                        help='add --year or -y and a digit in "1" "5" or "10" to specify year scale you would to search'
                              'For example --year 10. The Default is Not set',
                         default=None)
 
@@ -61,7 +62,21 @@ if __name__ == '__main__':
                         help='add --directory or -D specify the save path of pdf file'
                         'For example, -D ./output. Default path is ./document/pub'
                         'you can overrider the default path in config.py',
-                        default='./document/pub')
+                        default=None)
+
+    parser.add_argument("-p", "--pmid", type=str, metavar='',
+
+                        help='use the target pmcid to download the pubmed pdf file'
+                             'For example, -p 34048400. Default is None',
+                        default=None)
+    
+    parser.add_argument("-P", "--pmcid", type=str, metavar='',
+                        
+                        help='use the target pmcid to download the pubmed pdf file'
+                        'For example, -P PMC7447651. Default is None',
+                        default=None)
+    
+
     ####################################################################################################
 
     args = parser.parse_args()
@@ -74,18 +89,24 @@ if __name__ == '__main__':
     # the default pdf saving directory path is from config.py which is './document/pub'
     if args.directory is not None:
         projConfig.pdfSavePath = args.directory
+    else:
+        if projConfig.pdfSavePath is None:
+            print_error("Error" "Neither directory of cli nor pdfSavePath in config.py is None.")
+            print_error("Please check your config.py and cli parameter." "The program will exit.")
+            sys.exit()
 
     if args.keyword.isspace() or args.keyword.isnumeric():
         print("pubmedsoso search keyword error\n")
+        print_error("the program will exit.")
         sleep(feedbacktime)
-
-
+    
+    ######################################################################################################
 
     print(f"Current commandline parameters: {args.__dict__}\n")
     print(
         f"当前使用的命令行参数 搜索关键词: \"{args.keyword}\", 文献信息检索数量: {args.pagenum}, 年份：{args.year}, 文献下载数量: {args.downloadnum}, 下载文献的存储目录: {projConfig.pdfSavePath}\n")
     try:
-        result_num = WebHelper.GetSearchResultNum(args.keyword)
+        result_num = WebHelper.GetSearchResultNum(args.keyword, args.year)
     except Exception as err:
         raise
 
@@ -99,8 +120,10 @@ if __name__ == '__main__':
             pass
         if startFlag in ["n", "N", "No", "no"]:
             print("程序终止执行\n\n")
-            sleep(feedbacktime)
+            sleep(feedbacktime * 0.5)
             sys.exit()
+
+    ######################################################################################################
 
     printSpliter()
     print("程序已运行，开始检查数据储存目录\n")

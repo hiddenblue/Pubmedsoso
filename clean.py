@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-import DBHelper
+from utils import DBHelper
 
 """
 这个模块是用来清理当前目录下的之前执行的历史文件的

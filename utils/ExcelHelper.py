@@ -5,10 +5,9 @@ from time import sleep
 
 import pandas as pd
 
-from LogHelper import print_error
+from utils.LogHelper import print_error
 from config import projConfig
 feedbacktime = projConfig.feedbacktime
-
 
 class ExcelHelper:
     savepath: str = f'./pubmed-{projConfig.savetime}.xlsx'

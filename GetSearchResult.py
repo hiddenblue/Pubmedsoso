@@ -6,10 +6,10 @@ from typing import Optional, List
 
 from lxml import etree
 
-import DBHelper
-from DataType import ArticleFreeType, SingleSearchData
-from LogHelper import print_error
-from WebHelper import WebHelper
+from utils.DataType import ArticleFreeType, SingleSearchData
+from utils.LogHelper import print_error
+from utils.WebHelper import WebHelper
+from utils import DBHelper
 from config import projConfig
 
 
@@ -158,6 +158,7 @@ def spiderpub(parameter: str, page_limit: int, resultNum: int) -> None:
 
     print(f"准备获取搜索页面信息第1-{min(page_limit, pagemax)}页")
 
+    # 一次性构建好所有的搜索url参数
     for i in range(1, min(page_limit + 1, pagemax)):
         temp_param = parameter + "&page=" + str(i)
         param_list.append(temp_param)

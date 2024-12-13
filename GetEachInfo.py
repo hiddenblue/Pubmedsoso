@@ -8,14 +8,16 @@ from typing import List
 import requests
 from lxml import etree
 
-from DBHelper import DBSaveInfo, DBFetchAllPMID
-from DataType import ABS_PartEnumType, SingleDocInfo, Abstract
-from ExcelHelper import ExcelHelper
-from LogHelper import print_error
-from WebHelper import WebHelper
+from utils.DBHelper import DBSaveInfo, DBFetchAllPMID
+from utils.DataType import ABS_PartEnumType, SingleDocInfo, Abstract
+from utils.ExcelHelper import ExcelHelper
+from utils.LogHelper import print_error
+from utils.WebHelper import WebHelper
 from config import projConfig
 
-batchsize = projConfig.batchsize
+# adjust the BATCH_SIZE in config.py
+# the default info batch size is 50
+BATCH_SIZE = projConfig.InfoBatchSize
 
 
 def parse_abstract(
@@ -97,7 +99,15 @@ def parse_single_info(html_etree: etree.Element):
             temp_affitem = re.sub(r'\s{2,}', '', str(affi_list[i]).strip()).strip()
             Affiliation.append(str(i + 1) + "." + temp_affitem)
         print("Affiliation", Affiliation)
-
+    
+    # fulltext link except the pmc link
+    #//*[@id="article-page"]/aside/div/div[1]/div[1]/div/a
+    full_text_link:str = ""
+    full_text_elem = html_etree.xpath(".//div[@class='full-text-links']//div[@class='full-text-links-list']/a/@href")
+    if len(full_text_elem) != 0:
+        full_text_link = full_text_elem[0]
+    print("full_text_link: ", full_text_link)
+    
     # 提取摘要各部分
     abstract_chunk = html_etree.xpath(
         "//body/div[@id='article-page']/main[@id='article-details']/div[@id='abstract']//p"
@@ -124,7 +134,7 @@ def parse_single_info(html_etree: etree.Element):
         keywords=keywords,
         abstract=abstract_text,
     )
-    print("abstract", abstract_obj.to_complete_abs())
+    print("abstract: \n", abstract_obj.to_complete_abs())
 
     return SingleDocInfo(
         PMCID=PMCID,
@@ -145,22 +155,23 @@ def geteachinfo(dbpath):
     start = time.time()
 
     # 使用异步的asyncio和aiohttp来一次性获取所有文献页面的详细情况
-    # 考虑一次性获取的请求数量越多，整个可靠性会下降，我们不妨一次性最多请求50个页面吧,由batchsize，默认50
+    # 考虑一次性获取的请求数量越多，整个可靠性会下降，我们不妨一次性最多请求50个页面吧,由BATCH_SIZE，默认50
 
-    # 注意batchsize的大小
+    # 注意BATCH_SIZE的大小
 
     results = []
-    print("Geteachinfo batchsize: ", batchsize)
-    for i in range(0, len(PMID_list), batchsize):
-        target = []
-        if i + batchsize > len(PMID_list):
-            target = [pmid.PMID for pmid in PMID_list[i:]]
+    print("Geteachinfo BATCH_SIZE: ", BATCH_SIZE)
+    
+    
+    for i in range(0, len(PMID_list), BATCH_SIZE):
+        target_pmid: [str] = []
+        if i + BATCH_SIZE > len(PMID_list):
+            target_pmid = [pmid.PMID for pmid in PMID_list[i:]]
         else:
-            target = [pmid.PMID for pmid in PMID_list[i:i + batchsize]]
+            target_pmid = [pmid.PMID for pmid in PMID_list[i:i + BATCH_SIZE]]
 
         try:
-
-            results.extend(asyncio.run(WebHelper.GetAllHtmlAsync(target)))
+            results.extend(asyncio.run(WebHelper.GetAllHtmlAsync(target_pmid)))
         except Exception as e:
             print_error("异步爬取singleinfo时发生错误: ", e)
             print_error("默认自动跳过")
@@ -176,14 +187,12 @@ def geteachinfo(dbpath):
 
         DBSaveInfo(singleDocInfo, dbpath)
         # todo
-        # 异步执行提供速度
-        # todo
         # 通过cache机制来大幅提高单页检索的效率，已经存在的文献直接从本地的数据库进行加载
     ExcelHelper.PD_To_excel(dbpath)
 
 
 if __name__ == '__main__':
-    PMID = "30743289"
+    PMID = "36191595"
     ret = get_single_info(requests.Session(), PMID)
     print("PMCID:", ret.PMCID)
     print("PMID:", ret.PMID)

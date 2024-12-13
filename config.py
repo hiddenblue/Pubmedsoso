@@ -2,11 +2,27 @@
 import shutil
 import time
 
+class GlobalConfig:
+    def __init__(self):
+        self.savetime: str = time.strftime("%Y%m%d%H%M%S")
+        self.feedbacktime: float = 1.5
+        self.pdfSavePath: str = "./document/pub"
+
+        # 这个参数用于geteachinfo决定一次性通过异步下载多少页面的信息，默认50啦
+        self.InfoBatchSize: int = 50
+        self.PDF_BatchSize: int = 5
+
+
+# 下面这句在从其他模块导入这个变量执行就会自动执行，并且是一个全局共享的状态
+projConfig = GlobalConfig()
+
 class ProjectInfo:
-    VersionInfo: str = "1.2.1"
     ProjectName: str = "Pubmedsoso"
+    VersionInfo: str = "1.2.1"
     LastUpdate: str = "20241212"
     AuthorName: str = "hiddenblue"
+    License: str = "MIT"
+    ProjectWebsite: str = "https://github.com/hiddenblue/Pubmedsoso"
 
     @classmethod
     def printProjectInfo(cls):
@@ -35,19 +51,6 @@ class ProjectInfo:
 
         # 打印分隔线
         print("=" * terminal_width)
-        
-class GlobalConfig:
-    def __init__(self):
-        self.savetime: str = time.strftime("%Y%m%d%H%M%S")
-        self.feedbacktime: float = 1.5
-        self.pdfSavePath: str = "./document/pub"
-
-        # 这个参数用于geteachinfo决定一次性通过异步下载多少页面的信息，默认50啦
-        self.batchsize: int = 50 
-
-
-# 下面这句在从其他模块导入这个变量执行就会自动执行，并且是一个全局共享的状态
-projConfig = GlobalConfig()
 
 if __name__ == "__main__":
     

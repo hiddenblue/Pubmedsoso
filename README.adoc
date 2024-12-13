@@ -1,25 +1,25 @@
 = Pubmedsoso =
 :toc:
 
+*Language*: link:README.adoc[English] | link:README_CN.adoc[简体中文]
+
 image:assets/icon.png[Pubmedsoso]
 
-一个自动批量提取pubmed文献信息和下载免费文献的小工具
+A small tool for automatically extracting PubMed literature information and downloading free literature in bulk.
 
-== 主要功能 ==
+== Features ==
+A tool for crawling and downloading PubMed literature information, written based on `aiohttp`, `pandas`, and `xpath`. It retrieves relevant literature information according to the parameters you provide and downloads the corresponding PDF originals.
 
-自己写的基于aiohttp pandas和xpath 的pubmed文献信息爬取和下载的工具，按照你给定的参数，按你的要求获取相关的文献信息，并且下载对应文献的PDF原文
+The download speed is approximately 1 second per article. It can extract most of the literature information and automatically generate an Excel file, including details such as the title, abstract, keywords, author list, author affiliations, whether it is free, and whether it is a review type.
 
-下载速度大概是1s一篇，同时能够提取文献的大部分信息，并自动生成excel文件，包括文献标题，摘要，关键词，作者名单，作者单位，是否免费，是不是review类型等信息。
+After automatic downloading, some information is stored in local text files for reference, and search data is stored in an `sqlite3` database. Finally, after execution, all information is automatically exported and an Excel file is generated.
 
-自动下载后，会将部分信息储存在本地的文本文件中，供参考，检索数据会储存在sqlite3数据库中，最后执行完成后，自动导出所有信息，生成一个Excel文件。
+== Dependencies ==
+_Based on Python 3.9, also supports higher versions. Mainly uses `pandas`, `xpath`, `asyncio`, `aiohttp`._
 
-== 依赖模块 ==
+On the project page, there is an executable file packed with `Nuitka` in the Releases section, which includes all dependencies and can be directly downloaded and executed in the Windows command line.
 
-* 基于python3.9，主要使用了pandas, xpath, asyncio, aiohttp
-
-* 项目页面右边的Release当中有Nuitka打包成的exe执行文件，自带所有依赖，可以直接下载后在windows下命令行执行使用。
-
-* 如果需要自己在python环境运行请根据requirements.txt文件安装对应的依赖
+_If you need to run it in a Python environment, please install the corresponding dependencies according to the `requirements.txt` file._
 
 [source, bash, indent=2]
 ----
@@ -31,9 +31,8 @@ pandas~=2.2.3
 openpyxl~=3.1.5
 ----
 
-== 使用方法 ==
-
-. 克隆项目，在命令行环境下安装项目所需的依赖文件
+== Usage ==
+. Clone the project and install the required dependencies in the command line environment. It is recommended to use Python virtual environment tools such as `anaconda` or `miniconda3`.
 
 [source, bash]
 ----
@@ -42,96 +41,106 @@ cd Pubmedsoso
 pip install -r requirements.txt
 ----
 
-当然，不方便安装git工具的话，直接直接下载Release当中的ZIP解压执行
+If it is inconvenient to install the `git` tool, you can directly download the ZIP file from the Releases section on the right side of the page and unzip it for execution.
+
 image:assets/pubmed_release.png[Pubmedsoso, 600]
 
-. 在Windows terminal中切换到项目文件夹,执行 `python main.py` 带上关键词参数 或者在直接执行exe可执行文件 `pubmedsoso.exe` + 关键词
+. Switch to the project folder in the terminal and execute `python main.py` with keyword parameters, or directly execute the executable file `pubmedsoso.exe` + keywords. For example:
 
-比如
-[souce, bash]
+[source, bash]
 ----
 python main.py headache -n 5 -d 10
 ----
 
-`headache` 参数是此次运行输入的检索关键词
+`headache` is the search keyword (keyword) input for this run. If your keyword contains spaces, please enclose the keyword with double quotes. It supports PubMed advanced query boxes, such as "headache AND toothache", which include logical expressions like AND, NOT, OR.
 
-`-n` 参数后面数字指的是需要检索的页数， 每页会有50篇
+`-n` parameter followed by a number specifies the number of pages to search, with 50 articles per page.
 
-`-d` 参数后面表示需要下载的文献的份数
+`-d` parameter followed by a number specifies the number of articles to download.
 
-`-y`  可选参数，后面表示你想检索的信息的年份范围，以年为单位,比如 -y 5表示近五年的文献
+`-y` optional parameter followed by a number specifies the year range for the information you want to search, in years. For example, -y 5 means literature from the last five years.
 
-* 输入页数时，每页会检索50个，数字不用设置得太大，否则需要较长时间执行
+When entering the number of pages, each page contains 50 search results. There is no need to set a large number, otherwise, it will take a long time to execute.
 
-* 然后输入需要下载的文献数量，程序会从搜索结果中找到free pmc 免费文献，自动下载，这里下载速度取决你的网络状况。
-
-* 每个文献下载超过30s自动超时跳过，下载下一个。
+Then enter the number of articles you need to download. The program will find free PMC articles from the search results and download them automatically. The download speed depends on your network condition. Each article download will automatically timeout and skip after 30 seconds, downloading the next one.
 
 [source, bash]
 ----
 PS > python main.py --help
-
 usage: python main.py keyword
-pubmedsoso is a python program for crawler article information and download pdf file
+pubmedsoso is a python program for crawling article information and downloading pdf file
 
 positional arguments:
-keyword               specify the keywords to search pubmed For example "headache"
+  keyword               specify the keywords to search pubmed e.g. "headache"
 
 optional arguments:
---help,     -h      show this help message and exit
---version,  -v      use --version to show the version
---page_num, -n      add --number or -n to specify the page number to 
---year      -y      add --year or -y to specify year scale you would to 
---download_num, -d  add --download_num or -d to specify the number to download
-
+  --help,       -h    show this help message and exit
+  --version,    -v    use --version to show the version
+  --pagenum,    -n    add --pagenum or -n to specify the page number to
+  --year        -y    add --year or -y to specify year scale you would to
+  --downloadnum,-d    a digit number to  specify the number to download
+  --directory   -D    use a valid directory path specify the pdf save directory.
 ----
 
-_如果你熟悉IDE的话，可以在pycharm或者vscode等python环境下运行main.py_
+_If you are familiar with IDEs, you can run `main.py` in Python environments such as `pycharm` or `vscode`._
 
-. 根据提示输入 `y` 或者 `n` 决定是否以给定的参数执行程序
+. According to the prompts, input `y` or `n` to decide whether to execute the program with the given parameters.
 
 image:assets/pubmedsoso_teminal.png[comfirm picture, 600]
 
-**pubmedsoso会按照你正常搜索的顺序进行爬取下载**
+**pubmedsoso will crawl and download according to the normal search order.**
 
 image:assets/pic_keyword.png[Pubmedsoso, 600]
 
-. 文献会自动下载到之前说的"document/pub/"下，同时会生成原始遍历信息的txt文件，程序最终执行完成会生成excel文件。
+. The literature will be automatically downloaded to the "document/pub/" folder mentioned earlier, and a txt file with the original traversal information will be generated. The program will finally generate an Excel file after execution.
 
 image::assets/pic_result.png[Pubmedsoso, 600]
 
-WARNING::请勿过分爬取pubmed网站
+WARNING:: Please do not excessively crawl the PubMed website. Since this project uses asynchronous mechanisms, it has high concurrency capabilities. Parameters related to access speed can be set in `config.py`, and the default values are not too large.
 
-== ExcelHelper 模块 ==
-
-这个是方便大家在爬取之后，将历史信息导出到excel的模块，可以单独执行。比如在IDE或者命令行中执行 `python ExcelHelper.py`
+== ExcelHelper Module ==
+This module is convenient for exporting historical information to Excel after crawling. It can be executed separately, such as in an IDE or command line, by executing `python ExcelHelper.py`.
 
 image::assets/pic_save.png[Pubmedsoso]
 
-出现如上提示，可以选择sqlite3数据中的历史记录进行导出，会自动在本地生成一个导出的文件。**不能有重复命名的excel文件，需要按提示删除**
+When the above prompt appears, you can choose to export historical records from the `sqlite3` data and an exported file will be automatically generated locally. **Duplicate-named Excel files are not allowed and need to be deleted as prompted.**
 
 == TO DO List ==
+* [ ] Precise search and download, this is still a bit difficult_
 
-* [ ] 精确地搜索下载，这个还有点难
-* [x] 自定义关键词下载，等我有空弄明白pubmed的检索参数url生成规则就行（已经实现）
-* [ ] 对非免费文献的scihub自动补全下载，或许可以让用户写adapter自己实现
-* [ ] 能用的gui界面
-* [ ] 最好附带一个免费的百度翻译插件，有时候大家可能用得上
-* [x] 采用OOP和更加现代化的工具重构项目
-* [x] 使用异步的方式重构代码，提高执行的效率
-* [ ] 可能还需要一个堪用的日志系统
-* [ ] 可以做一个基于邮件的订阅-主动推送机制的主动的文献订阅功能，为用户推送最新文献
+* [x] Custom keyword download, waiting for me to figure out the PubMed search parameter URL generation rules (already implemented)
+* [ ] Automatic completion of non-free literature download via SciHub, perhaps allowing users to write adapters themselves_
+* [ ] A usable GUI interface_
+* [ ] Ideally, a free Baidu translation plugin, sometimes it might be useful_
+* [x] Refactor the project using OOP and more modern tools
+* [x] Refactor the code using asynchronous methods to improve execution efficiency
+* [ ] A potentially necessary logging system_
+* [ ] Implement an active literature subscription feature based on email subscription and push mechanism, pushing the latest literature to users
 
-'''
+== Debugging Guide ==
+Due to the specificity of the `asyncio` asynchronous module, some special issues may occur during debugging on Windows.
 
-    2022.5.16 更新
-    更新了自动创建document/pub文件夹功能，不需要手动创建文件夹了，会自动检查和创建。
+If you need to develop and debug the code, you need to modify two places:
 
-    2023.08.05 更新 
-    更新修复了abstract爬取失败的bug，同时不再需要用户手动复制粘贴网页的参数了。
+In `GetSearchResult.py`:
 
-    2024.11.23 更新
-    作者竟然想起了这个黑历史一般的项目，偷偷更新一下，“这TM是我写的代码? 怎么这么烂"
+[source, bash]
+----
+try:
+    if platform.system() == "Windows":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    html_list = asyncio.run(WebHelper.getSearchHtmlAsync(param_list))
+----
 
-    2024.12.02 更新
-    已经用基于OOP和asyncio异步机制重构了整个代码，去掉了运行速度的限制，速度大概是原来的100倍
+If debugging on Windows, please comment out the conditional execution statement above, otherwise, it will take effect during debugging and cause errors.
+
+Additionally, `asyncio.run()` is used in multiple places in the project. During debugging, the debug parameter needs to be enabled, otherwise, the runtime will get stuck and report a `TypeError: 'Task' object is not callable` error.
+
+== Update Log ==
+2022.5.16 Updated the feature to automatically create the `document/pub` folder, no need to manually create the folder, it will automatically check and create.
+
+2023.08.05 Updated to fix the bug where abstract crawling failed, and no longer requires users to manually copy and paste web parameters.
+
+2024.11.23 The author unexpectedly remembered this somewhat embarrassing project and quietly updated it, "Is this really the code I wrote? How could it be so bad?"
+
+2024.12.02 Refactored the entire code based on OOP, `xpath`, and `asyncio` asynchronous, removed the runtime speed limit, the speed is about 100 times the original, "Writing this was so exhausting."

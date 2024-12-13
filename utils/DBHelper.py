@@ -1,9 +1,9 @@
 import sqlite3
 from typing import List, Union
 
-from DataType import Publication
-from DataType import SingleDocInfo, TempPMID
-from LogHelper import print_error
+from utils.DataType import Publication
+from utils.DataType import SingleDocInfo, TempPMID
+from utils.LogHelper import print_error
 from config import projConfig 
 
 

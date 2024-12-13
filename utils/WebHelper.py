@@ -9,7 +9,7 @@ from aiohttp import ClientSession, ClientTimeout
 from lxml import etree
 from requests.exceptions import HTTPError, ConnectionError, ProxyError, ConnectTimeout
 
-from LogHelper import print_error
+from utils.LogHelper import print_error
 
 
 class WebHelper:
@@ -21,27 +21,25 @@ class WebHelper:
     session = requests.Session()
 
     @classmethod
-    def createParamDcit(cls, keyword, year: Union[int, None] = None):
-
-        if " " in keyword:
-            keyword = keyword.replace(" ", "%20")
+    def createParamDcit(cls, keyword:str, year: Union[int, None] = None):
+                
         search_keywords_dict = {}
         search_keywords_dict['term'] = keyword.strip()
 
         if year:
-            search_keywords_dict['year'] = year
+            search_keywords_dict['filter'] = f'datesearch.y_{year}'
 
         # substitute the page size param with 50
         search_keywords_dict['size'] = 50
 
         return search_keywords_dict
-
-    @staticmethod
-    def encodeParam(param: dict) -> str:
+    
+    @classmethod
+    def encodeParam(cls, param: dict) -> str:
         return urllib.parse.urlencode(param)
 
     @staticmethod
-    def handle_error(e):
+    def __handle_error(e):
         print_error("Error occured: %s" % e)
 
     @classmethod
@@ -91,7 +89,7 @@ class WebHelper:
             return html
 
         except (ProxyError, ConnectTimeout, ConnectionError, HTTPError) as e:
-            cls.handle_error(e)
+            cls.__handle_error(e)
             print_error("GetHTML requests Error: %s" % e)
             return None
 
@@ -100,9 +98,9 @@ class WebHelper:
             return None
 
     @staticmethod
-    def GetSearchResultNum(keyword: str) -> int:
+    def GetSearchResultNum(keyword: str, year: int = None) -> int:
         # 根据上面输入的关键词初始化生成url参数
-        ParamDict = WebHelper.createParamDcit(keyword)
+        ParamDict = WebHelper.createParamDcit(keyword, year=year)
         encoded_param = WebHelper.encodeParam(ParamDict)
         try:
             html = WebHelper.getSearchHtml(encoded_param)
@@ -135,12 +133,12 @@ class WebHelper:
                 return content.decode("utf-8")
 
             except (aiohttp.ClientResponseError, aiohttp.ClientHttpProxyError) as e:
-                cls.handle_error(e)
+                cls.__handle_error(e)
                 print_error("GetHTML requests Error: %s" % e)
                 return None
 
             except Exception as e:
-                cls.handle_error(e)
+                cls.__handle_error(e)
                 print_error("GetHTML requests Error: %s" % e)
                 return None
 
