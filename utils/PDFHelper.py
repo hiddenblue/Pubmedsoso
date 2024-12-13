@@ -15,6 +15,11 @@ from config import projConfig
 
 # 把一些关于PDF相关的操作抽象出来了，方便其他模块调用
 
+# adjust the BATCH_SIZE in config.py according to your usage 
+# the default pdf batch size is 5
+BATCH_SIZE = projConfig.PDF_BatchSize
+
+
 # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9034016/pdf/main.pdf
 
 class PDFHelper:
@@ -109,16 +114,19 @@ class PDFHelper:
 
     @classmethod
     async def PDFBatchDonwloadAsync(cls, PMCID_list: list[str]) -> list[Optional[bytes]]:
-        pdf_batchsize = 5
+        """
+        异步下载pmc文献的函数，以pdf_batchsize作为一次请求的量
+        其中的pdf_batchsize可以通过config.py进行设置
+        """
 
         pdf_list: list[Optional[bytes]] = []
 
-        for i in range(0, len(PMCID_list), pdf_batchsize):
+        for i in range(0, len(PMCID_list), BATCH_SIZE):
             target = []
-            if i + pdf_batchsize > len(PMCID_list):
+            if i + BATCH_SIZE > len(PMCID_list):
                 target = PMCID_list[i:]
             else:
-                target = PMCID_list[i:i + pdf_batchsize]
+                target = PMCID_list[i:i + BATCH_SIZE]
 
             print(f"开始下载第 {i}-{i + len(target)}篇")
             async with aiohttp.ClientSession(timeout=ClientTimeout(30)) as session:

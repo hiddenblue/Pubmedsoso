@@ -15,7 +15,9 @@ from utils.LogHelper import print_error
 from utils.WebHelper import WebHelper
 from config import projConfig
 
-batchsize = projConfig.batchsize
+# adjust the BATCH_SIZE in config.py
+# the default info batch size is 50
+BATCH_SIZE = projConfig.InfoBatchSize
 
 
 def parse_abstract(
@@ -153,18 +155,20 @@ def geteachinfo(dbpath):
     start = time.time()
 
     # 使用异步的asyncio和aiohttp来一次性获取所有文献页面的详细情况
-    # 考虑一次性获取的请求数量越多，整个可靠性会下降，我们不妨一次性最多请求50个页面吧,由batchsize，默认50
+    # 考虑一次性获取的请求数量越多，整个可靠性会下降，我们不妨一次性最多请求50个页面吧,由BATCH_SIZE，默认50
 
-    # 注意batchsize的大小
+    # 注意BATCH_SIZE的大小
 
     results = []
-    print("Geteachinfo batchsize: ", batchsize)
-    for i in range(0, len(PMID_list), batchsize):
+    print("Geteachinfo BATCH_SIZE: ", BATCH_SIZE)
+    
+    
+    for i in range(0, len(PMID_list), BATCH_SIZE):
         target_pmid: [str] = []
-        if i + batchsize > len(PMID_list):
+        if i + BATCH_SIZE > len(PMID_list):
             target_pmid = [pmid.PMID for pmid in PMID_list[i:]]
         else:
-            target_pmid = [pmid.PMID for pmid in PMID_list[i:i + batchsize]]
+            target_pmid = [pmid.PMID for pmid in PMID_list[i:i + BATCH_SIZE]]
 
         try:
             results.extend(asyncio.run(WebHelper.GetAllHtmlAsync(target_pmid)))
@@ -182,8 +186,6 @@ def geteachinfo(dbpath):
         singleDocInfo = parse_single_info(etree.HTML(results[i]))
 
         DBSaveInfo(singleDocInfo, dbpath)
-        # todo
-        # 异步执行提供速度
         # todo
         # 通过cache机制来大幅提高单页检索的效率，已经存在的文献直接从本地的数据库进行加载
     ExcelHelper.PD_To_excel(dbpath)
