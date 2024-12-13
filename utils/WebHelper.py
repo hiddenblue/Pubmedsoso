@@ -9,7 +9,7 @@ from aiohttp import ClientSession, ClientTimeout
 from lxml import etree
 from requests.exceptions import HTTPError, ConnectionError, ProxyError, ConnectTimeout
 
-from LogHelper import print_error
+from utils.LogHelper import print_error
 
 
 class WebHelper:
@@ -41,7 +41,7 @@ class WebHelper:
         return urllib.parse.urlencode(param)
 
     @staticmethod
-    def handle_error(e):
+    def __handle_error(e):
         print_error("Error occured: %s" % e)
 
     @classmethod
@@ -91,7 +91,7 @@ class WebHelper:
             return html
 
         except (ProxyError, ConnectTimeout, ConnectionError, HTTPError) as e:
-            cls.handle_error(e)
+            cls.__handle_error(e)
             print_error("GetHTML requests Error: %s" % e)
             return None
 
@@ -135,12 +135,12 @@ class WebHelper:
                 return content.decode("utf-8")
 
             except (aiohttp.ClientResponseError, aiohttp.ClientHttpProxyError) as e:
-                cls.handle_error(e)
+                cls.__handle_error(e)
                 print_error("GetHTML requests Error: %s" % e)
                 return None
 
             except Exception as e:
-                cls.handle_error(e)
+                cls.__handle_error(e)
                 print_error("GetHTML requests Error: %s" % e)
                 return None
 

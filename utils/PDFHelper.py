@@ -7,9 +7,9 @@ from typing import Optional
 import aiohttp
 from aiohttp import ClientSession, ClientTimeout
 
-from DBHelper import DBWriter, DBFetchAllFreePMC
-from DataType import TempPMID
-from LogHelper import print_error
+from utils.DBHelper import DBWriter, DBFetchAllFreePMC
+from utils.DataType import TempPMID
+from utils.LogHelper import print_error
 from config import projConfig
 
 
@@ -95,12 +95,12 @@ class PDFHelper:
 
         for index, pdf_content  in enumerate(pdf_list):
             temppmid = target_pmc_list[index]
-            if pdf_content == None:
+            if pdf_content is None:
                 print_error("PMCID: %s" % temppmid.PMCID, "从目标站获取pdf数据失败")
             else:
 
                 status = PDFHelper.PDFSaveFile(pdf_content, temppmid)
-                if (status == True):
+                if status == True:
                     # 将pdf文件名称以及存储位置等相关信息添加到sqlite数据库当中
                     PDFHelper.PDFUpdateDB(temppmid, cls.__GetPDFSavePath(temppmid), dbpath)
                 else:
@@ -115,7 +115,7 @@ class PDFHelper:
 
         for i in range(0, len(PMCID_list), pdf_batchsize):
             target = []
-            if (i + pdf_batchsize > len(PMCID_list)):
+            if i + pdf_batchsize > len(PMCID_list):
                 target = PMCID_list[i:]
             else:
                 target = PMCID_list[i:i + pdf_batchsize]
@@ -155,27 +155,46 @@ class PDFHelper:
                 return None
 
     @classmethod
-    def PDFSaveFile(cls, html, tempid: TempPMID) -> bool:
+    def PDFSaveFile(cls, html:bytes, tempid: TempPMID) -> bool:
         """
         将pdf保存到本地文件的功能
         暂时还不确定能否支持异步，就先用同步版本了
         """
-        tablename = 'pubmed%s' % projConfig.savetime
         # pdf = html.decode("utf-8")  # 使用Unicode8对二进制网页进行解码，直接写入文件就不需要解码了
+        if html is None:
+            return False
 
         try:
             articleName = cls.__GetPDFFileName(tempid)
             # 需要注意的是文件命名中不能含有以上特殊符号，只能去除掉
             savepath = "%s/%s.pdf" % (projConfig.pdfSavePath, articleName)
-            file = open(savepath, 'wb')
-            print("open success")
-            file.write(html)
-            file.close()
+            
+            cls.FileSave(html, savepath)
             print("pdf文件写入成功,文件ID为 %s" % tempid.PMCID, "保存路径为%s" % projConfig.pdfSavePath)
             return True
-        except:
+        except Exception as e:
             print_error(f"pdf文件写入失败, 文件ID为 {tempid.PMCID}, 检查路径")
+            print_error(e)
             return False
+        
+    @classmethod
+    def FileSave(cls, content: bytes, savepath:str) -> bool:
+        """
+        一个方便将文件保存操作分离出来基础函数
+        主要还是为独立的pdf下载函数服务的
+        """
+        try:
+            file = open(savepath, 'wb')
+            print("open success")
+            file.write(content)
+            file.close()
+            print("文件写入成功", "保存路径为%s" % savepath)
+            return True
+        except Exception as e:
+            print_error("文件写入失败", "保存路径为%s" % savepath)
+            print_error(e)
+            return False
+        
 
     @classmethod
     def PDFUpdateDB(cls, tempid: TempPMID, savepath: str, dbpath: str) -> bool:

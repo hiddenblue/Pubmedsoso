@@ -6,10 +6,10 @@ from typing import Optional, List
 
 from lxml import etree
 
-import DBHelper
-from DataType import ArticleFreeType, SingleSearchData
-from LogHelper import print_error
-from WebHelper import WebHelper
+from utils.DataType import ArticleFreeType, SingleSearchData
+from utils.LogHelper import print_error
+from utils.WebHelper import WebHelper
+from utils import DBHelper
 from config import projConfig
 
 

@@ -8,11 +8,11 @@ from typing import List
 import requests
 from lxml import etree
 
-from DBHelper import DBSaveInfo, DBFetchAllPMID
-from DataType import ABS_PartEnumType, SingleDocInfo, Abstract
-from ExcelHelper import ExcelHelper
-from LogHelper import print_error
-from WebHelper import WebHelper
+from utils.DBHelper import DBSaveInfo, DBFetchAllPMID
+from utils.DataType import ABS_PartEnumType, SingleDocInfo, Abstract
+from utils.ExcelHelper import ExcelHelper
+from utils.LogHelper import print_error
+from utils.WebHelper import WebHelper
 from config import projConfig
 
 batchsize = projConfig.batchsize
@@ -97,7 +97,15 @@ def parse_single_info(html_etree: etree.Element):
             temp_affitem = re.sub(r'\s{2,}', '', str(affi_list[i]).strip()).strip()
             Affiliation.append(str(i + 1) + "." + temp_affitem)
         print("Affiliation", Affiliation)
-
+    
+    # fulltext link except the pmc link
+    #//*[@id="article-page"]/aside/div/div[1]/div[1]/div/a
+    full_text_link:str = ""
+    full_text_elem = html_etree.xpath(".//div[@class='full-text-links']//div[@class='full-text-links-list']/a/@href")
+    if len(full_text_elem) != 0:
+        full_text_link = full_text_elem[0]
+    print("full_text_link: ", full_text_link)
+    
     # 提取摘要各部分
     abstract_chunk = html_etree.xpath(
         "//body/div[@id='article-page']/main[@id='article-details']/div[@id='abstract']//p"
@@ -182,7 +190,7 @@ def geteachinfo(dbpath):
 
 
 if __name__ == '__main__':
-    PMID = "30743289"
+    PMID = "36191595"
     ret = get_single_info(requests.Session(), PMID)
     print("PMCID:", ret.PMCID)
     print("PMID:", ret.PMID)

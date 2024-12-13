@@ -4,12 +4,12 @@ import os
 import sys
 from time import sleep
 
-from geteachinfo import geteachinfo
-
-from ExcelHelper import ExcelHelper
+from GetEachInfo import geteachinfo
 from GetSearchResult import spiderpub
-from PDFHelper import PDFHelper
-from WebHelper import WebHelper
+
+from utils.ExcelHelper import ExcelHelper
+from utils.PDFHelper import PDFHelper
+from utils.WebHelper import WebHelper
 from config import ProjectInfo, projConfig
 
 feedbacktime = projConfig.feedbacktime
@@ -62,6 +62,20 @@ if __name__ == '__main__':
                         'For example, -D ./output. Default path is ./document/pub'
                         'you can overrider the default path in config.py',
                         default='./document/pub')
+
+    parser.add_argument("-p", "--pmid", type=str, metavar='',
+
+                        help='use the target pmcid to download the pubmed pdf file'
+                             'For example, -p 34048400. Default is None',
+                        default=None)
+    
+    parser.add_argument("-P", "--pmcid", type=str, metavar='',
+                        
+                        help='use the target pmcid to download the pubmed pdf file'
+                        'For example, -P PMC7447651. Default is None',
+                        default=None)
+    
+
     ####################################################################################################
 
     args = parser.parse_args()

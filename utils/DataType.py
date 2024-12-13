@@ -99,7 +99,7 @@ class Abstract:
         """
         输出一个格式化后的完整摘要
         """
-        parts = []
+        parts: [str] = []
         if self.background:
             parts.append(self.background.strip())
         if self.methods:
