@@ -1,25 +1,25 @@
-= Pubmedsoso =
+= Pubmedsoso
 :toc:
 
 *Language*: link:README.adoc[English] | link:README_CN.adoc[简体中文]
 
 image:assets/icon.png[Pubmedsoso]
 
-A small tool for automatically extracting PubMed literature information and downloading free literature in bulk.
+A small tool for automatically batch extracting PubMed literature information and downloading free literature.
 
-== Features ==
-A tool for crawling and downloading PubMed literature information, written based on `aiohttp`, `pandas`, and `xpath`. It retrieves relevant literature information according to the parameters you provide and downloads the corresponding PDF originals.
+== Main Features
 
-The download speed is approximately 1 second per article. It can extract most of the literature information and automatically generate an Excel file, including details such as the title, abstract, keywords, author list, author affiliations, whether it is free, and whether it is a review type.
+A tool for crawling and downloading PubMed literature information, written based on `aiohttp`, `pandas`, and `xpath`. It retrieves relevant literature information according to the parameters you provide and downloads the corresponding PDF originals. The download speed is approximately 1 second per article. It can extract most of the literature information and automatically generate an Excel file, including titles, abstracts, keywords, author lists, author affiliations, whether it is free, and whether it is a review type, etc.
 
-After automatic downloading, some information is stored in local text files for reference, and search data is stored in an `sqlite3` database. Finally, after execution, all information is automatically exported and an Excel file is generated.
+After automatic downloading, some information will be stored in local text files for reference. Search data will be stored in an `sqlite3` database. Finally, after execution, all information will be automatically exported and an Excel file will be generated.
 
-== Dependencies ==
-_Based on Python 3.9, also supports higher versions. Mainly uses `pandas`, `xpath`, `asyncio`, `aiohttp`._
+== Dependency Modules
 
-On the project page, there is an executable file packed with `Nuitka` in the Releases section, which includes all dependencies and can be directly downloaded and executed in the Windows command line.
+*Based on Python 3.9, also supports higher versions. Mainly uses `pandas`, `xpath`, `asyncio`, `aiohttp`.*
 
-_If you need to run it in a Python environment, please install the corresponding dependencies according to the `requirements.txt` file._
+In the Release section on the right side of the project page, there is an executable file packed with Nuitka, which includes all dependencies and can be directly downloaded and executed in the Windows command line.
+
+*If you need to run it in a Python environment, please install the corresponding dependencies according to the `requirements.txt` file.*
 
 [source, bash, indent=2]
 ----
@@ -29,10 +29,13 @@ requests~=2.32.3
 lxml~=5.3.0
 pandas~=2.2.3
 openpyxl~=3.1.5
+colorlog~=6.9.0
 ----
 
-== Usage ==
-. Clone the project and install the required dependencies in the command line environment. It is recommended to use Python virtual environment tools such as `anaconda` or `miniconda3`.
+== Usage
+
+. Clone the project and install the required dependency files in the command line environment.
+It is recommended to use Python virtual environment tools such as `anaconda` or `miniconda3`.
 
 [source, bash]
 ----
@@ -41,50 +44,53 @@ cd Pubmedsoso
 pip install -r requirements.txt
 ----
 
-If it is inconvenient to install the `git` tool, you can directly download the ZIP file from the Releases section on the right side of the page and unzip it for execution.
+If it is inconvenient to install the git tool, you can directly download the ZIP from the Release on the right side of the page and unzip it for execution.
 
 image:assets/pubmed_release.png[Pubmedsoso, 600]
 
-. Switch to the project folder in the terminal and execute `python main.py` with keyword parameters, or directly execute the executable file `pubmedsoso.exe` + keywords. For example:
+. Switch to the project folder in the terminal and execute `python main.py` with keyword parameters, or directly execute the executable file `pubmedsoso.exe` + keywords.
+For example:
 
 [source, bash]
 ----
-python main.py headache -n 5 -d 10
+python main.py -k headache -n 5 -d 10 -y 5
 ----
 
-`headache` is the search keyword (keyword) input for this run. If your keyword contains spaces, please enclose the keyword with double quotes. It supports PubMed advanced query boxes, such as "headache AND toothache", which include logical expressions like AND, NOT, OR.
+*`-k headache`* is the search keyword (keyword) input for this run. If your keyword contains spaces, please enclose the entire keyword in double quotes.
+It supports PubMed advanced query box, such as "headache AND toothache", which includes logical expressions such as AND, NOT, OR.
 
-`-n` parameter followed by a number specifies the number of pages to search, with 50 articles per page.
+*`-n`* parameter followed by a number refers to the number of pages to be searched, with 50 articles per page.
 
-`-d` parameter followed by a number specifies the number of articles to download.
+*`-d`* parameter followed by a number indicates the number of articles to be downloaded.
 
-`-y` optional parameter followed by a number specifies the year range for the information you want to search, in years. For example, -y 5 means literature from the last five years.
+*`-y`* optional parameter, followed by the year range of the information you want to search, in years. For example, `-y 5` means literature from the last five years.
 
-When entering the number of pages, each page contains 50 search results. There is no need to set a large number, otherwise, it will take a long time to execute.
+When entering the number of pages, each page will contain 50 search results. There is no need to set a large number, otherwise, it will take a long time to execute.
 
-Then enter the number of articles you need to download. The program will find free PMC articles from the search results and download them automatically. The download speed depends on your network condition. Each article download will automatically timeout and skip after 30 seconds, downloading the next one.
+Then enter the number of articles you need to download. The program will find free PMC articles from the search results and automatically download them. The download speed depends on your network condition.
+
+Each article download will automatically timeout and skip to the next one if it exceeds 30 seconds.
 
 [source, bash]
 ----
 PS > python main.py --help
-usage: python main.py keyword
-pubmedsoso is a python program for crawling article information and downloading pdf file
-
-positional arguments:
-  keyword               specify the keywords to search pubmed e.g. "headache"
-
+usage: python main.py -k keyword
+pubmedsoso is a python program for crawler article information and download pdf file
 optional arguments:
   --help,       -h    show this help message and exit
   --version,    -v    use --version to show the version
+  --keyword,    -k    specify the keywords to search pubmed
   --pagenum,    -n    add --pagenum or -n to specify the page number to
   --year        -y    add --year or -y to specify year scale you would to
   --downloadnum,-d    a digit number to  specify the number to download
-  --directory   -D    use a valid directory path specify the pdf save directory.
+  --directory   -D    use a vaild dir path specify the pdf save directory.
+  --output      -o    add --output filename to appoint name of pdf file
+  --loglevel    -l    set the console log level, e.g debug
 ----
 
-_If you are familiar with IDEs, you can run `main.py` in Python environments such as `pycharm` or `vscode`._
+*If you are familiar with IDEs, you can run `main.py` in Python environments such as `pycharm` or `vscode`.*
 
-. According to the prompts, input `y` or `n` to decide whether to execute the program with the given parameters.
+. According to the prompt, enter `y` or `n` to decide whether to execute the program with the given parameters.
 
 image:assets/pubmedsoso_teminal.png[comfirm picture, 600]
 
@@ -92,33 +98,36 @@ image:assets/pubmedsoso_teminal.png[comfirm picture, 600]
 
 image:assets/pic_keyword.png[Pubmedsoso, 600]
 
-. The literature will be automatically downloaded to the "document/pub/" folder mentioned earlier, and a txt file with the original traversal information will be generated. The program will finally generate an Excel file after execution.
+. The literature will be automatically downloaded to the "document/pub/" folder mentioned earlier, and a txt file with the original traversal information will be generated. Finally, an Excel file will be generated after the program execution is complete.
 
 image::assets/pic_result.png[Pubmedsoso, 600]
 
-WARNING:: Please do not excessively crawl the PubMed website. Since this project uses asynchronous mechanisms, it has high concurrency capabilities. Parameters related to access speed can be set in `config.py`, and the default values are not too large.
+WARNING:: Please do not excessively crawl the PubMed website.
+Since this project uses asynchronous mechanisms, it has high concurrency capabilities. Parameters related to access speed can be set in `config.py`, and the default values are not too large.
 
-== ExcelHelper Module ==
-This module is convenient for exporting historical information to Excel after crawling. It can be executed separately, such as in an IDE or command line, by executing `python ExcelHelper.py`.
+== ExcelHelper Module
+
+This is a module to facilitate exporting historical information to Excel after crawling. It can be executed separately, such as in an IDE or command line by executing `python ExcelHelper.py`.
 
 image::assets/pic_save.png[Pubmedsoso]
 
-When the above prompt appears, you can choose to export historical records from the `sqlite3` data and an exported file will be automatically generated locally. **Duplicate-named Excel files are not allowed and need to be deleted as prompted.**
+With the above prompt, you can choose to export historical records from the `sqlite3` database, which will automatically generate an exported file locally. **Duplicate-named Excel files are not allowed and need to be deleted as prompted.**
 
-== TO DO List ==
-* [ ] Precise search and download, this is still a bit difficult_
+== TO DO List
 
+* [ ] Precise search and download, this is still a bit difficult*
 * [x] Custom keyword download, waiting for me to figure out the PubMed search parameter URL generation rules (already implemented)
-* [ ] Automatic completion of non-free literature download via SciHub, perhaps allowing users to write adapters themselves_
-* [ ] A usable GUI interface_
-* [ ] Ideally, a free Baidu translation plugin, sometimes it might be useful_
+* [ ] Automatic completion download of non-free literature via SciHub, perhaps allowing users to write adapters themselves*
+* [ ] A usable GUI interface*
+* [ ] It would be best to include a free Baidu translation plugin, which might be useful sometimes*
 * [x] Refactor the project using OOP and more modern tools
 * [x] Refactor the code using asynchronous methods to improve execution efficiency
-* [ ] A potentially necessary logging system_
-* [ ] Implement an active literature subscription feature based on email subscription and push mechanism, pushing the latest literature to users
+* [x] A usable logging system may also be needed
+* [ ] A subscription-based, proactive literature push mechanism could be developed to push the latest literature to users
 
-== Debugging Guide ==
-Due to the specificity of the `asyncio` asynchronous module, some special issues may occur during debugging on Windows.
+== Debugging Guide
+
+Due to the peculiarities of the `asyncio` asynchronous module, some special issues may arise during debugging on Windows.
 
 If you need to develop and debug the code, you need to modify two places:
 
@@ -136,11 +145,12 @@ If debugging on Windows, please comment out the conditional execution statement 
 
 Additionally, `asyncio.run()` is used in multiple places in the project. During debugging, the debug parameter needs to be enabled, otherwise, the runtime will get stuck and report a `TypeError: 'Task' object is not callable` error.
 
-== Update Log ==
-2022.5.16 Updated the feature to automatically create the `document/pub` folder, no need to manually create the folder, it will automatically check and create.
+== Update Log
 
-2023.08.05 Updated to fix the bug where abstract crawling failed, and no longer requires users to manually copy and paste web parameters.
+2022.5.16 Updated the automatic creation of the `document/pub` folder feature, no need to manually create the folder, it will automatically check and create.
+
+2023.08.05 Updated to fix the bug where abstract crawling failed, and users no longer need to manually copy and paste webpage parameters.
 
 2024.11.23 The author unexpectedly remembered this somewhat embarrassing project and quietly updated it, "Is this really the code I wrote? How could it be so bad?"
 
-2024.12.02 Refactored the entire code based on OOP, `xpath`, and `asyncio` asynchronous, removed the runtime speed limit, the speed is about 100 times the original, "Writing this was so exhausting."
+2024.12.02 Refactored the entire code based on OOP, `xpath`, and `asyncio` asynchronous, removed the runtime speed limit, the speed is about 100 times the original, "I'm so tired after writing this."

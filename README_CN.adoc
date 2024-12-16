@@ -31,6 +31,7 @@ requests~=2.32.3
 lxml~=5.3.0
 pandas~=2.2.3
 openpyxl~=3.1.5
+colorlog~=6.9.0
 ----
 
 == 使用方法 ==
@@ -55,10 +56,10 @@ image:assets/pubmed_release.png[Pubmedsoso, 600]
 比如
 [souce, bash]
 ----
-python main.py headache -n 5 -d 10
+python main.py -k headache -n 5 -d 10 -y 5
 ----
 
-`headache` 是此次运行输入的检索关键词(keyword)
+`-k headache` 是此次运行输入的检索关键词(keyword)
 
 如果你使用的关键字当中包含空格，请使用双引号将关键词整体围起来。 支持pubmed advance query box 比如 "headache AND toothache" 这样的包含AND NOT OR等逻辑表达的query
 
@@ -78,20 +79,20 @@ python main.py headache -n 5 -d 10
 ----
 PS > python main.py --help
 
-usage: python main.py keyword
-pubmedsoso is a python program for crawler article information and download pdf file
+usage: python main.py -k keyword
 
-positional arguments:
-keyword               specify the keywords to search pubmed e.g. "headache"
+pubmedsoso is a python program for crawler article information and download pdf file
 
 optional arguments:
 --help,       -h    show this help message and exit
 --version,    -v    use --version to show the version
+--keyword,    -k    specify the keywords to search pubmed
 --pagenum,    -n    add --pagenum or -n to specify the page number to 
 --year        -y    add --year or -y to specify year scale you would to 
 --downloadnum,-d    a digit number to  specify the number to download
---directory   -D    use a vaild directory path specify the pdf save directory.
-
+--directory   -D    use a vaild dir path specify the pdf save directory.
+--output      -o    add --output filename to appoint name of pdf file
+--loglevel    -l    set the console log level, e.g debug
 ----
 
 _如果你熟悉IDE的话，可以在pycharm或者vscode等python环境下运行main.py_
@@ -129,7 +130,7 @@ image::assets/pic_save.png[Pubmedsoso]
 * [ ] 最好附带一个免费的百度翻译插件，有时候大家可能用得上
 * [x] 采用OOP和更加现代化的工具重构项目
 * [x] 使用异步的方式重构代码，提高执行的效率
-* [ ] 可能还需要一个堪用的日志系统
+* [x] 可能还需要一个堪用的日志系统
 * [ ] 可以做一个基于邮件的订阅-主动推送机制的主动的文献订阅功能，为用户推送最新文献
 
 
