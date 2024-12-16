@@ -34,6 +34,7 @@ jobs:
         run: |
           nuitka --onefile --windows-icon-from-ico=./assets/icon.png --output-dir=out_windows --output-filename=pubmedsoso.exe --assume-yes-for-downloads main.py
 
+
       - name: Check output directory
         run: dir out_windows
 
@@ -52,6 +53,7 @@ jobs:
       - name: Set up Python 3.9
         uses: actions/setup-python@v4
         with:
+
           python-version: '3.9'
 
       - name: Install dependencies
@@ -67,6 +69,7 @@ jobs:
         run: |
           nuitka --onefile --macos-create-app-bundle --macos-app-icon=./assets/icon.png --output-dir=out_macos --output-filename=pubmedsoso.darwin.bin --assume-yes-for-downloads main.py
 
+
       - name: Check output directory
         run: ls out_macos
 
@@ -78,6 +81,7 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-22.04
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

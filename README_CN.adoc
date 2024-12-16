@@ -32,6 +32,7 @@ lxml~=5.3.0
 pandas~=2.2.3
 openpyxl~=3.1.5
 colorlog~=6.9.0
+
 ----
 
 == 使用方法 ==
@@ -60,6 +61,7 @@ python main.py -k headache -n 5 -d 10 -y 5
 ----
 
 `-k headache` 是此次运行输入的检索关键词(keyword)
+
 
 如果你使用的关键字当中包含空格，请使用双引号将关键词整体围起来。 支持pubmed advance query box 比如 "headache AND toothache" 这样的包含AND NOT OR等逻辑表达的query
 
@@ -131,6 +133,7 @@ image::assets/pic_save.png[Pubmedsoso]
 * [x] 采用OOP和更加现代化的工具重构项目
 * [x] 使用异步的方式重构代码，提高执行的效率
 * [x] 可能还需要一个堪用的日志系统
+
 * [ ] 可以做一个基于邮件的订阅-主动推送机制的主动的文献订阅功能，为用户推送最新文献
 
 

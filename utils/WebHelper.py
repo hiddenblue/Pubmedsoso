@@ -26,6 +26,7 @@ class WebHelper:
         这个函数接受任意个数的参数作为字典使用，但是在使用的时候需要显式指定参数名称
         """
 
+
         search_keywords_dict = {}
         if 'keyword' in kwargs and kwargs['keyword']:
             search_keywords_dict['term'] = kwargs.get('keyword')
@@ -37,6 +38,7 @@ class WebHelper:
         search_keywords_dict['size'] = 50
 
         return search_keywords_dict
+
 
     @classmethod
     def encodeParam(cls, param: dict) -> str:

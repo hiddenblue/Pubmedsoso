@@ -63,6 +63,7 @@ if __name__ == '__main__':
                         help='add --directory or -D specify the save path of pdf file'
                              ' For example, -D ./output. Default path is ./document/pub'
                              'you can overrider the default path in config.py',
+
                         default=None)
 
     parser.add_argument("-p", "--pmid", type=str, metavar='',
@@ -129,6 +130,7 @@ if __name__ == '__main__':
 
     medLog.info(f"Current commandline parameters: {args.__dict__}\n")
     medLog.info(
+
         f"当前使用的命令行参数 搜索关键词: \"{args.keyword}\", 文献信息检索数量: {args.pagenum}, 年份：{args.year}, 文献下载数量: {args.downloadnum}, 下载文献的存储目录: {projConfig.pdfSavePath}\n")
     try:
         result_num = WebHelper.GetSearchResultNum(keyword=args.keyword, year=args.year)
