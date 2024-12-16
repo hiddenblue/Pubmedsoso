@@ -1,7 +1,7 @@
 import asyncio
 import time
 import urllib.parse
-from typing import Optional, Union
+from typing import Optional
 
 import aiohttp
 import requests
@@ -9,7 +9,7 @@ from aiohttp import ClientSession, ClientTimeout
 from lxml import etree
 from requests.exceptions import HTTPError, ConnectionError, ProxyError, ConnectTimeout
 
-from utils.LogHelper import print_error
+from utils.LogHelper import medLog
 
 
 class WebHelper:
@@ -21,26 +21,32 @@ class WebHelper:
     session = requests.Session()
 
     @classmethod
-    def createParamDcit(cls, keyword:str, year: Union[int, None] = None):
-                
-        search_keywords_dict = {}
-        search_keywords_dict['term'] = keyword.strip()
+    def parseParamDcit(cls, **kwargs):
+        """
+        这个函数接受任意个数的参数作为字典使用，但是在使用的时候需要显式指定参数名称
+        """
 
-        if year:
-            search_keywords_dict['filter'] = f'datesearch.y_{year}'
+
+        search_keywords_dict = {}
+        if 'keyword' in kwargs and kwargs['keyword']:
+            search_keywords_dict['term'] = kwargs.get('keyword')
+
+        if 'year' in kwargs and kwargs['year'] is not None:
+            search_keywords_dict['filter'] = f'datesearch.y_{kwargs.get("year")}'
 
         # substitute the page size param with 50
         search_keywords_dict['size'] = 50
 
         return search_keywords_dict
-    
+
+
     @classmethod
     def encodeParam(cls, param: dict) -> str:
         return urllib.parse.urlencode(param)
 
     @staticmethod
     def __handle_error(e):
-        print_error("Error occured: %s" % e)
+        medLog.error("Error occured: %s" % e)
 
     @classmethod
     def getSearchHtml(cls, parameter: str):
@@ -50,7 +56,7 @@ class WebHelper:
             SearchHtml = WebHelper.GetHtml(cls.session, paramencoded)
             return SearchHtml
         except Exception as e:
-            print_error("获取检索页失败，请检查输入的参数 %s\n" % e)
+            medLog.error("获取检索页失败，请检查输入的参数 %s\n" % e)
 
     @classmethod
     async def getSearchHtmlAsync(cls, parameter_list: list[str]) -> list[str]:
@@ -60,7 +66,7 @@ class WebHelper:
         """
         parameter_list_encoded = ["?" + param for param in parameter_list]
         async with aiohttp.ClientSession(timeout=ClientTimeout(15)) as session:
-            print(f"爬取第0-{len(parameter_list)}当中")
+            medLog.info(f"爬取第0-{len(parameter_list)}当中")
             start = time.time()
             # limit the semaphore
             tasks_search = [asyncio.create_task(cls.GetHtmlAsync(session, param_encode)) for param_encode in
@@ -68,7 +74,7 @@ class WebHelper:
             results = await asyncio.gather(*tasks_search)
             end = time.time()
 
-            print("getSearchHtmlAsync() takes %.2f seconds." % (end - start))
+            medLog.info("getSearchHtmlAsync() takes %.2f seconds." % (end - start))
         return results
 
     @classmethod
@@ -90,18 +96,18 @@ class WebHelper:
 
         except (ProxyError, ConnectTimeout, ConnectionError, HTTPError) as e:
             cls.__handle_error(e)
-            print_error("GetHTML requests Error: %s" % e)
+            medLog.error("GetHTML requests Error: %s" % e)
             return None
 
         except Exception as e:
-            print_error(f"请求失败: {e}")
+            medLog.error(f"请求失败: {e}")
             return None
 
     @staticmethod
-    def GetSearchResultNum(keyword: str, year: int = None) -> int:
+    def GetSearchResultNum(**kwargs) -> int:
         # 根据上面输入的关键词初始化生成url参数
-        ParamDict = WebHelper.createParamDcit(keyword, year=year)
-        encoded_param = WebHelper.encodeParam(ParamDict)
+        paramDict: dict = WebHelper.parseParamDcit(**kwargs)
+        encoded_param = WebHelper.encodeParam(paramDict)
         try:
             html = WebHelper.getSearchHtml(encoded_param)
 
@@ -112,13 +118,12 @@ class WebHelper:
             if len(resultNumElem) != 0:
                 return int(resultNumElem[0].replace(",", ""))
         except Exception as e:
-            print_error("获取当前关键词搜索结果数量时出错: ", e)
+            medLog.error("获取当前关键词搜索结果数量时出错: ", e)
             raise
 
     @classmethod
     async def GetHtmlAsync(cls, session: ClientSession, paramUrlEncoded: str,
-                           baseurl="https://pubmed.ncbi.nlm.nih.gov/") -> Optional[
-        str]:
+                           baseurl="https://pubmed.ncbi.nlm.nih.gov/") -> Optional[str]:
         """
         异步改造后的html请求函数，基于asyncio和aiohttp包
 
@@ -134,12 +139,12 @@ class WebHelper:
 
             except (aiohttp.ClientResponseError, aiohttp.ClientHttpProxyError) as e:
                 cls.__handle_error(e)
-                print_error("GetHTML requests Error: %s" % e)
+                medLog.error("GetHTML requests Error: %s" % e)
                 return None
 
             except Exception as e:
                 cls.__handle_error(e)
-                print_error("GetHTML requests Error: %s" % e)
+                medLog.error("GetHTML requests Error: %s" % e)
                 return None
 
     @classmethod
@@ -157,10 +162,10 @@ class WebHelper:
                 tasks2 = [asyncio.create_task(cls.GetHtmlAsync(session, PMID)) for PMID in PMIDList]
                 results = await asyncio.gather(*tasks2)
                 end = time.time()
-                print("GetAllHtmlAsync() takes %.2f seconds" % (end - start))
+                medLog.info("GetAllHtmlAsync() takes %.2f seconds" % (end - start))
                 return results
         except Exception as e:
-            print_error(" GetAllHtmlAsync:", e)
+            medLog.critical(" GetAllHtmlAsync:", e)
             raise
 
 

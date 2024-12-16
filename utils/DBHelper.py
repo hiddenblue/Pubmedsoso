@@ -1,10 +1,11 @@
+import pathlib
 import sqlite3
 from typing import List, Union
 
+from config import projConfig
 from utils.DataType import Publication
 from utils.DataType import SingleDocInfo, TempPMID
-from utils.LogHelper import print_error
-from config import projConfig 
+from utils.LogHelper import medLog
 
 
 # 把一些关于sqlite3相关的操作抽象出来了，方便其他模块调用
@@ -16,16 +17,19 @@ def DBCreater(dbpath: str) -> bool:
 
     :param dbpath: Path to the SQLite database file.
     """
+    if not pathlib.Path(dbpath).exists():
+        medLog.warning("target database path does not exist. Program will create it.")
+
     try:
         # Connect to the database (this will create the file if it doesn't exist)
         with sqlite3.connect(dbpath) as conn:
-            print(f"数据库创建成功: {dbpath}")
+            medLog.info(f"数据库连接成功: {dbpath}")
             return True
     except sqlite3.Error as e:
-        print_error(f"createDB SQLite Error: {e}\n")
+        medLog.error(f"createDB SQLite Error: {e}\n")
         return False
     except Exception as e:
-        print_error(f"createDB General Error: {e}\n")
+        medLog.error(f"createDB General Error: {e}\n")
         return False
 
 
@@ -37,7 +41,7 @@ def DBTableCreater(dbpath: str, tablename: str) -> bool:
     :param tablename: Name of the table to be created.
     """
     # Generate the tablename using the provided savetime
-    print(f"tablename: {tablename}")
+    medLog.info(f"tablename: {tablename}")
 
     # SQL statement to create the table
     sql = f'''
@@ -67,13 +71,13 @@ def DBTableCreater(dbpath: str, tablename: str) -> bool:
             cursor.execute(sql)
             # Commit the transaction
             conn.commit()
-            print(f"表 {tablename} 创建成功")
+            medLog.info(f"表 {tablename} 创建成功")
             return True
     except sqlite3.Error as e:
-        print_error(f"createtable SQLite Error: {e}\n")
+        medLog.error(f"createtable SQLite Error: {e}\n")
         return False
     except Exception as e:
-        print_error(f"createtable General Error: {e}\n")
+        medLog.error(f"createtable General Error: {e}\n")
         return False
 
 
@@ -86,10 +90,10 @@ def DBTableFinder(dbpath: str) -> list[str]:
         return tablelist
 
     except sqlite3.Error as e:
-        print_error("sqlite3 error: %s\n" % e)
+        medLog.error("sqlite3 error: %s\n" % e)
 
     except Exception as e:
-        print_error("数据库查询出错，请检查数据库: %s" % e)
+        medLog.error("数据库查询出错，请检查数据库: %s" % e)
 
 
 def DBRemoveTable(dbpath: str, tablename: str) -> bool:
@@ -97,7 +101,7 @@ def DBRemoveTable(dbpath: str, tablename: str) -> bool:
         current_table = DBTableFinder(dbpath)
 
         if tablename not in current_table:
-            print(f"the target table: {tablename} is not exist")
+            medLog.info(f"the target table: {tablename} is not exist")
             return False
 
         remove_sql = f"DROP TABLE {tablename}"
@@ -105,7 +109,7 @@ def DBRemoveTable(dbpath: str, tablename: str) -> bool:
         return True
 
     except Exception as e:
-        print_error(f"removeTable SQLite Error: {e}\n")
+        medLog.error(f"removeTable SQLite Error: {e}\n")
         return False
 
 
@@ -132,10 +136,10 @@ def DBReader(dbpath: str, sql: str) -> list:
             ret = cursor.fetchall()
     except sqlite3.Error as e:
         # Handle SQLite-specific errors
-        print_error(f"readDB SQLite Error: {e}\n")
+        medLog.error(f"readDB SQLite Error: {e}\n")
     except Exception as e:
         # Handle any other exceptions
-        print_error(f"readDB General Error: {e}\n")
+        medLog.error(f"readDB General Error: {e}\n")
     finally:
         # Return the fetched results
         return ret
@@ -160,13 +164,13 @@ def DBWriter(dbpath: str, sql: str, params: tuple = None) -> bool:
                 cursor.execute(sql)
             # Commit the transaction
             conn.commit()
-            print("Database write operation successful.")
+            medLog.info("Database write operation successful.")
             # Return True if any changes were made, otherwise False
             return conn.total_changes > 0
     except sqlite3.Error as e:
-        print_error(f"writeDB SQLite Error: {e}\n")
+        medLog.error(f"writeDB SQLite Error: {e}\n")
     except Exception as e:
-        print_error(f"writeDB General Error: {e}\n")
+        medLog.error(f"writeDB General Error: {e}\n")
     finally:
         return False
 
@@ -191,12 +195,12 @@ def DBSaveInfo(singleinfo: SingleDocInfo, dbpath: str):
 
         ret: bool = DBWriter(dbpath, writer_sql, writer_param)
         if ret:
-            print(f"单个页面数据写入成功 对应PMID为{pmid}\n")
+            medLog.info(f"单个页面数据写入成功 对应PMID为{pmid}\n")
 
     except sqlite3.Error as e:
-        print_error(f"当前页面数据保存失败: {e}\n")
+        medLog.error(f"当前页面数据保存失败: {e}\n")
     except Exception as e:
-        print_error(f"readDB Error: {e}\n")
+        medLog.error(f"readDB Error: {e}\n")
 
 
 def DBFetchAllFreePMC(dbpath: str, tableName) -> list[TempPMID]:
@@ -217,26 +221,26 @@ def DBFetchAllPMID(dbpath: str, tableName) -> list[TempPMID]:
     请注意使用
     
     """
-    print("dbpath: ", dbpath)
-    print("tablename: ", tableName)
+    medLog.info("dbpath: %s" % dbpath)
+    medLog.info("tablename: %s" % tableName)
 
     try:
         sql = "SELECT PMCID, PMID, doctitle FROM %s" % tableName
 
         if len(sql) < 200:
-            print(sql)
+            medLog.debug(sql)
         else:
-            print(sql[:200])
+            medLog.debug(sql[:200])
 
         ret = DBReader(dbpath, sql)
         for i in range(len(ret)):
             ret[i] = TempPMID(ret[i][0], ret[i][1], ret[i][2])
-        print(ret)
-        print('读取sql信息成功 数据类型为PMCID和doctitle\n')
+        medLog.debug(ret)
+        medLog.info('读取sql信息成功 数据类型为PMCID和doctitle\n')
         return ret
 
     except Exception as e:
-        print_error("连接数据库失败，请检查目标数据库: %s\n" % e)
+        medLog.error("连接数据库失败，请检查目标数据库: %s\n" % e)
         return []
 
 
@@ -247,8 +251,8 @@ def DBFetchAllRecord(dbpath: str, tableName, outputpublication=True) -> Union[Li
     请注意使用
     
     """
-    print("dbpath: ", dbpath)
-    print("tablename: ", tableName)
+    medLog.info("dbpath: %s " % dbpath)
+    medLog.info("tablename: %s" % tableName)
 
     try:
         sql: str = f'''
@@ -270,12 +274,12 @@ def DBFetchAllRecord(dbpath: str, tableName, outputpublication=True) -> Union[Li
                     savepath
                 FROM {tableName}
             '''  # 根据设置的freemark参数，查找数据库文献的信息,free = 1用于查找所有免费文献用来下载，而free = 2用于拿数据所有文献去获得详细信息
-        print(sql)
+        medLog.info(sql)
         ret = DBReader(dbpath, sql)
 
         if outputpublication == False:
-            print(ret)
-            print('读取sql信息成功 数据类型为Publication\n')
+            medLog.debug(ret)
+            medLog.info('读取sql信息成功 数据类型为Publication\n')
             return ret
 
         for i in range(len(ret)):
@@ -284,10 +288,10 @@ def DBFetchAllRecord(dbpath: str, tableName, outputpublication=True) -> Union[Li
                                  ret[i][6], ret[i][7], ret[i][8],
                                  ret[i][9], ret[i][10], ret[i][11],
                                  ret[i][12], ret[i][13])
-        print(ret)
-        print('读取sql信息成功 数据类型为Publication\n')
+        medLog.debug(ret)
+        medLog.info('读取sql信息成功 数据类型为Publication\n')
         return ret
 
     except Exception as e:
-        print("连接数据库失败，请检查目标数据库: %s\n" % e)
+        medLog.info("连接数据库失败，请检查目标数据库: %s\n" % e)
         return None

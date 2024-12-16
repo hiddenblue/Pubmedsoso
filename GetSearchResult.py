@@ -6,11 +6,11 @@ from typing import Optional, List
 
 from lxml import etree
 
-from utils.DataType import ArticleFreeType, SingleSearchData
-from utils.LogHelper import print_error
-from utils.WebHelper import WebHelper
-from utils import DBHelper
 from config import projConfig
+from utils import DBHelper
+from utils.DataType import ArticleFreeType, SingleSearchData
+from utils.LogHelper import medLog
+from utils.WebHelper import WebHelper
 
 
 def parseSearchHtml(html: str) -> Optional[List[SingleSearchData]]:
@@ -31,28 +31,28 @@ def parseSearchHtml(html: str) -> Optional[List[SingleSearchData]]:
         html_etree = etree.HTML(html)
 
     AllSearchElem = html_etree.xpath("(//div[@class='docsum-content'])")
-    print(len(AllSearchElem))
+    medLog.info("len(AllSearchElem): %s" % len(AllSearchElem))
     ret = []
 
     try:
         for index, singleSearchElem in enumerate(AllSearchElem):
-            print(index + 1)
+            medLog.info("current searchResult index: %s" % (index + 1))
 
             # 1. Document Title
             xpath_expression = './/a[@class="docsum-title"]/text() | .//a[@class="docsum-title"]//b/text()'
             doctitleElem = singleSearchElem.xpath(xpath_expression)
             doctitle = "".join([item.strip() for item in doctitleElem if item.strip()])
-            print("doctitle: ", doctitle)
+            medLog.debug("doctitle: %s" % doctitle)
 
             # 2. Short Author
             short_author = singleSearchElem.xpath(".//span[@class='docsum-authors short-authors']/text()")
             short_author = short_author[0] if short_author else ""
-            print("short_author: ", short_author)
+            medLog.debug("short_author: %s" % short_author)
 
             # 3. Full Author
             full_author = singleSearchElem.xpath(".//span[@class='docsum-authors full-authors']/text()")
             full_author = full_author[0] if full_author else ""
-            print("full_author: ", full_author)
+            medLog.debug("full_author: %s" % full_author)
 
             # 4. Short Journal
             short_journal_elem = singleSearchElem.xpath(
@@ -65,13 +65,13 @@ def parseSearchHtml(html: str) -> Optional[List[SingleSearchData]]:
                 ".//span[@class='docsum-journal-citation full-journal-citation']/text()"
             )
             full_journal = full_journal[0] if full_journal else ""
-            print("short_journal: ", short_journal)
-            print("full_journal: ", full_journal)
+            medLog.debug("short_journal: %s" % short_journal)
+            medLog.debug("full_journal: %s" % full_journal)
 
             # 6. PMID
             PMID = singleSearchElem.xpath(".//span[@class='docsum-pmid']/text()")
             PMID = PMID[0] if PMID else ""
-            print("PMID: ", PMID)
+            medLog.debug("PMID: %s" % PMID)
 
             # 7. Free Mark
             freePMCMarkElem = singleSearchElem.xpath(
@@ -85,14 +85,14 @@ def parseSearchHtml(html: str) -> Optional[List[SingleSearchData]]:
                 FreeMark = ArticleFreeType.FreeArticle
             else:
                 FreeMark = ArticleFreeType.NoneFreeArticle
-            print("FreeMark: ", FreeMark)
+            medLog.debug("FreeMark: %s" % FreeMark)
 
             # 8. Review Mark
             reviewMark = singleSearchElem.xpath(
                 ".//span[@class='publication-type spaced-citation-item citation-part']/text()"
             )
             reviewMark = bool(reviewMark)
-            print("reviewMark: ", reviewMark)
+            medLog.debug("reviewMark: %s" % reviewMark)
 
             ret.append(SingleSearchData(
                 doctitle=doctitle,
@@ -104,10 +104,10 @@ def parseSearchHtml(html: str) -> Optional[List[SingleSearchData]]:
                 freemark=FreeMark,
                 reviewmark=reviewMark
             ))
-        print("当前data数据长度%d\n" % len(ret))
+        medLog.info("当前data数据长度%d\n" % len(ret))
         return ret
     except Exception as e:
-        print_error("遍历搜索页信息失败: %s\n" % e)
+        medLog.error("遍历搜索页信息失败: %s\n" % e)
         return []
 
 
@@ -139,7 +139,7 @@ def SaveSearchData(datalist: List[SingleSearchData], dbpath: str) -> None:
             )
             DBHelper.DBWriter(dbpath, sql, writeparam)
         except Exception as e:
-            print_error("当前项目写入失败: %s\n" % e)
+            medLog.error("当前项目写入失败: %s\n" % e)
             continue
 
 
@@ -156,7 +156,7 @@ def spiderpub(parameter: str, page_limit: int, resultNum: int) -> None:
     param_list = []
     pagemax = (resultNum + 49) // 50
 
-    print(f"准备获取搜索页面信息第1-{min(page_limit, pagemax)}页")
+    medLog.info(f"准备获取搜索页面信息第1-{min(page_limit, pagemax)}页")
 
     # 一次性构建好所有的搜索url参数
     for i in range(1, min(page_limit + 1, pagemax)):
@@ -170,12 +170,12 @@ def spiderpub(parameter: str, page_limit: int, resultNum: int) -> None:
         html_list = asyncio.run(WebHelper.getSearchHtmlAsync(param_list))
 
     except Exception as e:
-        print_error("spiderpub函数出错，请检查结果\n")
+        medLog.error("spiderpub函数出错，请检查结果\n")
         raise
 
     for html in html_list:
         if html is None:
-            print("部分检索页面出错")
+            medLog.error("部分检索页面出错")
             continue
         else:
             SingleSearchPageData = parseSearchHtml(html)
@@ -191,13 +191,13 @@ def spiderpub(parameter: str, page_limit: int, resultNum: int) -> None:
         DBHelper.DBTableCreater(dbpath, tablename)
         SaveSearchData(datalist, dbpath)
     except Exception as e:
-        print_error("将搜索信息存储到sqlite3数据库： %s的表: %s 时发生错误: %s" % (dbpath, tablename, e))
+        medLog.error("将搜索信息存储到sqlite3数据库： %s的表: %s 时发生错误: %s" % (dbpath, tablename, e))
 
     try:
         with open(txtname, "w", encoding='utf-8') as file:
             for singleSearchData in datalist:
                 output = singleSearchData.to_string() + '\n'
                 file.write(output)
-        print("搜索信息导入到txt当中成功")
+        medLog.info("搜索信息导入到txt当中成功")
     except Exception as e:
-        print_error("导出到txt时发生错误: ", e)
+        medLog.error("导出到txt时发生错误: %s" % e)

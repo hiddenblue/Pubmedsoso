@@ -1,9 +1,12 @@
 name: Nuitka Packaging
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
-      - master
+      - dev
   workflow_dispatch:
 
 jobs:
@@ -18,25 +21,19 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Cache Python dependencies
-        uses: actions/cache@v3
-        with:
-          path: ${{ runner.cache }}/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install imageio
 
       - name: Install Nuitka
         run: pip install nuitka
 
       - name: Build with Nuitka (Windows)
         run: |
-          nuitka --onefile --windows-icon-from-ico=./asset/icon.png --output-dir=out_windows --output-filename=pubmedsoso.exe --assume-yes-for-downloads main.py
+          nuitka --onefile --windows-icon-from-ico=./assets/icon.png --output-dir=out_windows --output-filename=pubmedsoso.exe --assume-yes-for-downloads main.py
+
 
       - name: Check output directory
         run: dir out_windows
@@ -56,27 +53,22 @@ jobs:
       - name: Set up Python 3.9
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
 
-      - name: Cache Python dependencies
-        uses: actions/cache@v3
-        with:
-          path: ${{ runner.cache }}/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          python-version: '3.9'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install imageio
 
       - name: Install Nuitka
         run: pip install nuitka
 
       - name: Build with Nuitka (macOS)
         run: |
-          nuitka --onefile --macos-create-app-bundle --macos-app-icon=./asset/icon.png --output-dir=out_macos --output-filename=pubmedsoso.darwin.bin --assume-yes-for-downloads main.py
+          nuitka --onefile --macos-create-app-bundle --macos-app-icon=./assets/icon.png --output-dir=out_macos --output-filename=pubmedsoso.darwin.bin --assume-yes-for-downloads main.py
+
 
       - name: Check output directory
         run: ls out_macos
@@ -88,7 +80,8 @@ jobs:
           path: out_macos/pubmedsoso.darwin.bin
 
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -97,14 +90,6 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-
-      - name: Cache Python dependencies
-        uses: actions/cache@v3
-        with:
-          path: ${{ runner.cache }}/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |

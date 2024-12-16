@@ -7,11 +7,10 @@ from typing import Optional
 import aiohttp
 from aiohttp import ClientSession, ClientTimeout
 
+from config import projConfig
 from utils.DBHelper import DBWriter, DBFetchAllFreePMC
 from utils.DataType import TempPMID
-from utils.LogHelper import print_error
-from config import projConfig
-
+from utils.LogHelper import print_error, medLog
 
 # 把一些关于PDF相关的操作抽象出来了，方便其他模块调用
 
@@ -80,12 +79,12 @@ class PDFHelper:
 
         # 过滤掉已经存在于本地的文献
         target_pmc_list: [TempPMID] = []  # target pdf list to be downloaded
-        
+
         for item in free_pmc_list:
             if cls.__IsPDFExist(item):
                 # 存在于目录当中直接更新就行了
                 cls.PDFUpdateDB(item, cls.__GetPDFSavePath(item), dbpath)
-                print(f"PDF: {cls.__GetPDFFileName(item)} 在保存目录当中已存在，跳过下载")
+                medLog.info(f"PDF: {cls.__GetPDFFileName(item)} 在保存目录当中已存在，跳过下载")
                 # 还没有下载就放到待下载列表当中
             else:
                 target_pmc_list.append(item)
@@ -94,14 +93,14 @@ class PDFHelper:
         # 这两个内容的index是相互对应的
         target_pmc_list: [TempPMID] = target_pmc_list[:limit]
         target_pmcid_list: [str] = [tempid.PMCID for tempid in target_pmc_list]
-        
+
         # 不用担心输入和返回的匹配的位置对应问题
         pdf_list: [Optional[bytes]] = asyncio.run(cls.PDFBatchDonwloadAsync(target_pmcid_list))
 
-        for index, pdf_content  in enumerate(pdf_list):
+        for index, pdf_content in enumerate(pdf_list):
             temppmid = target_pmc_list[index]
             if pdf_content is None:
-                print_error("PMCID: %s" % temppmid.PMCID, "从目标站获取pdf数据失败")
+                medLog.error("PMCID: %s 从目标站获取pdf数据失败" % temppmid.PMCID)
             else:
 
                 status = PDFHelper.PDFSaveFile(pdf_content, temppmid)
@@ -109,7 +108,7 @@ class PDFHelper:
                     # 将pdf文件名称以及存储位置等相关信息添加到sqlite数据库当中
                     PDFHelper.PDFUpdateDB(temppmid, cls.__GetPDFSavePath(temppmid), dbpath)
                 else:
-                    print_error("保存pdf文件发生错误，自动跳过该文献PMCID为 %s" % temppmid.PMCID)
+                    medLog.error("保存pdf文件发生错误，自动跳过该文献PMCID为 %s" % temppmid.PMCID)
                     continue
 
     @classmethod
@@ -128,7 +127,7 @@ class PDFHelper:
             else:
                 target = PMCID_list[i:i + BATCH_SIZE]
 
-            print(f"开始下载第 {i}-{i + len(target)}篇")
+            medLog.info(f"开始下载第 {i}-{i + len(target)}篇")
             async with aiohttp.ClientSession(timeout=ClientTimeout(30)) as session:
                 start = time.time()
 
@@ -136,12 +135,12 @@ class PDFHelper:
                 results = await asyncio.gather(*tasks)
                 end = time.time()
 
-                print("PDFBatchDonwloadAsync takes %.2f seconds." % (end - start))
+                medLog.info("PDFBatchDonwloadAsync takes %.2f seconds." % (end - start))
             pdf_list.extend(results)
         return pdf_list
 
     @classmethod
-    async def PDFdownloadAsync(cls, session: ClientSession, PMCID:str) -> Optional[bytes]:
+    async def PDFdownloadAsync(cls, session: ClientSession, PMCID: str) -> Optional[bytes]:
         downloadUrl = cls.baseurl + "pmc/articles/" + PMCID + "/pdf/main.pdf"
         semaphore = asyncio.Semaphore(5)
 
@@ -149,21 +148,21 @@ class PDFHelper:
             try:
                 response = await session.get(downloadUrl, headers=cls.headers)
                 content = await response.read()
-                print("%s.pdf" % tempid, "从目标站获取pdf数据成功")
+                medLog.info("%s.pdf 从目标站获取pdf数据成功" % tempid)
                 return content
 
             except (aiohttp.ClientResponseError, aiohttp.ClientHttpProxyError) as e:
                 cls.handle_error(e)
-                print_error("%s.pdf" % tempid, "从目标站获取pdf数据失败")
+                medLog.error("%s.pdf 从目标站获取pdf数据失败" % tempid)
                 return None
 
             except Exception as e:
                 cls.handle_error(e)
-                print_error("%s.pdf" % tempid, "从目标站获取pdf数据失败")
+                medLog.error("%s.pdf 从目标站获取pdf数据失败" % tempid, )
                 return None
 
     @classmethod
-    def PDFSaveFile(cls, html:bytes, tempid: TempPMID) -> bool:
+    def PDFSaveFile(cls, html: bytes, tempid: TempPMID) -> bool:
         """
         将pdf保存到本地文件的功能
         暂时还不确定能否支持异步，就先用同步版本了
@@ -176,33 +175,33 @@ class PDFHelper:
             articleName = cls.__GetPDFFileName(tempid)
             # 需要注意的是文件命名中不能含有以上特殊符号，只能去除掉
             savepath = "%s/%s.pdf" % (projConfig.pdfSavePath, articleName)
-            
+
             cls.FileSave(html, savepath)
-            print("pdf文件写入成功,文件ID为 %s" % tempid.PMCID, "保存路径为%s" % projConfig.pdfSavePath)
+            medLog.info("pdf文件写入成功,文件ID为 %s" % tempid.PMCID)
+            medLog.info("保存路径为 %s" % projConfig.pdfSavePath)
             return True
         except Exception as e:
-            print_error(f"pdf文件写入失败, 文件ID为 {tempid.PMCID}, 检查路径")
-            print_error(e)
+            medLog.error(f"pdf文件写入失败, 文件ID为 {tempid.PMCID}, 检查路径")
+            medLog.error(e)
             return False
-        
+
     @classmethod
-    def FileSave(cls, content: bytes, savepath:str) -> bool:
+    def FileSave(cls, content: bytes, savepath: str) -> bool:
         """
         一个方便将文件保存操作分离出来基础函数
         主要还是为独立的pdf下载函数服务的
         """
         try:
             file = open(savepath, 'wb')
-            print("open success")
+            medLog.info("open success")
             file.write(content)
             file.close()
-            print("文件写入成功", "保存路径为%s" % savepath)
+            medLog.info("文件写入成功", "保存路径为%s" % savepath)
             return True
         except Exception as e:
-            print_error("文件写入失败", "保存路径为%s" % savepath)
-            print_error(e)
+            medLog.error("文件写入失败", "保存路径为%s" % savepath)
+            medLog.error(e)
             return False
-        
 
     @classmethod
     def PDFUpdateDB(cls, tempid: TempPMID, savepath: str, dbpath: str) -> bool:
@@ -212,11 +211,13 @@ class PDFHelper:
             param = (savepath, tempid.PMCID)
             DBWriter(dbpath, writeSql, param)
 
-            print("pdf文件写入成功,文件ID为 %s" % tempid.PMCID,
-                  "地址写入到数据库pubmedsql下的table%s中成功" % tablename)
+            medLog.info("pdf文件写入成功,文件ID为 %s" % tempid.PMCID)
+            medLog.info("地址写入到数据库pubmedsql下的table%s中成功" % tablename)
+            medLog.info("\n")
             return True
         except Exception as e:
-            print_error("pdf文件保存路径写入到数据库失败: ", e)
+            medLog.error("pdf文件保存路径写入到数据库失败: %s" % e)
+            medLog.error("\n")
             return False
 
 

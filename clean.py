@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 from utils import DBHelper
+from utils.LogHelper import medLog
 
 """
 这个模块是用来清理当前目录下的之前执行的历史文件的
@@ -9,8 +10,6 @@ from utils import DBHelper
 如果不是有清理的需要，请勿执行，执行会丢失所有的历史记录（已下载pdf除外）
 
 """
-
-
 
 
 def clean_files(directory):
@@ -21,9 +20,9 @@ def clean_files(directory):
             file_path = os.path.join(directory, filename)
             try:
                 os.remove(file_path)
-                print(f"Deleted {file_path}")
+                medLog.warning(f"Deleted {file_path}")
             except Exception as e:
-                print(f"Error deleting {file_path}: {e}")
+                medLog.error(f"Error deleting {file_path}: {e}")
 
 
 def clean_sqlite(dbpath: str):
@@ -64,6 +63,7 @@ def run_main_command():
 """
 
 if __name__ == "__main__":
+    medLog.warning("The clean.py is up")
     # 获取当前工作目录
     current_directory = os.getcwd()
     # 清理文件
@@ -72,3 +72,4 @@ if __name__ == "__main__":
     clean_sqlite("./pubmedsql")
     # 运行主要命令
     # run_main_command()
+    medLog.warning("The clean.py is down")

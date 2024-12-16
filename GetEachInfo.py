@@ -8,12 +8,12 @@ from typing import List
 import requests
 from lxml import etree
 
+from config import projConfig
 from utils.DBHelper import DBSaveInfo, DBFetchAllPMID
 from utils.DataType import ABS_PartEnumType, SingleDocInfo, Abstract
 from utils.ExcelHelper import ExcelHelper
-from utils.LogHelper import print_error
+from utils.LogHelper import medLog
 from utils.WebHelper import WebHelper
-from config import projConfig
 
 # adjust the BATCH_SIZE in config.py
 # the default info batch size is 50
@@ -47,7 +47,7 @@ def get_single_info(session, PMID: str) -> SingleDocInfo:
     try:
         html = WebHelper.GetHtml(session, PMID)
     except Exception as e:
-        print_error(f"请求失败: {e}")
+        medLog.error(f"请求失败: {e}")
         return SingleDocInfo()
 
     if os.getenv("LOCAL_DEBUG"):
@@ -64,7 +64,7 @@ def parse_single_info(html_etree: etree.Element):
         PMID = PMID_elem[0]
     else:
         PMID = None
-    print("PMID:", PMID)
+    medLog.debug("PMID: %s" % PMID)
 
     # 提取PMCID和DOI
     PMCID_elem = html_etree.xpath(".//span[@class='identifier pmc']//a[@class='id-link']/text()")
@@ -72,14 +72,14 @@ def parse_single_info(html_etree: etree.Element):
         PMCID = [pmcid.strip() for pmcid in PMCID_elem if "PMC" in pmcid][0]
     else:
         PMCID = ""
-    print("PMCID", PMCID)
+    medLog.debug("PMCID %s" % PMCID)
 
     doi = ""
     DOI_elem = html_etree.xpath(
         ".//ul[@id='full-view-identifiers']//span[@class='identifier doi']/a[@class='id-link']/text()")
     if len(DOI_elem) != 0:
         doi = DOI_elem[0].strip()
-    print("DOI", doi)
+    medLog.debug("DOI %s" % doi)
 
     # Affiliation  type list[str]
     Affiliation = []
@@ -90,24 +90,26 @@ def parse_single_info(html_etree: etree.Element):
     else:
         # 有两组重复的附属单位，我们取第一组就行了
         affi_elem = affi_elem[0]
-        # print(affi_elem)
+        medLog.debug("affi_elem: %s" % affi_elem)
         affi_list = affi_elem.xpath(".//li[@data-affiliation-id]/text()")
-        # print(affi_list)
+        medLog.debug("affi_emem: %s" % affi_list)
 
         for i in range(len(affi_list)):
             # 利用正则去掉多余的空格
             temp_affitem = re.sub(r'\s{2,}', '', str(affi_list[i]).strip()).strip()
             Affiliation.append(str(i + 1) + "." + temp_affitem)
-        print("Affiliation", Affiliation)
-    
-    # fulltext link except the pmc link
-    #//*[@id="article-page"]/aside/div/div[1]/div[1]/div/a
-    full_text_link:str = ""
+        medLog.debug("Affiliation %s " % Affiliation)
+
+    # fulltext link
+    # not including the pmc link
+    # //*[@id="article-page"]/aside/div/div[1]/div[1]/div/a
+    # 我们假设只有一个有效的full text link 多了暂时不管
+    full_text_link: str = ""
     full_text_elem = html_etree.xpath(".//div[@class='full-text-links']//div[@class='full-text-links-list']/a/@href")
     if len(full_text_elem) != 0:
         full_text_link = full_text_elem[0]
-    print("full_text_link: ", full_text_link)
-    
+    medLog.debug("full_text_link: %s " % full_text_link)
+
     # 提取摘要各部分
     abstract_chunk = html_etree.xpath(
         "//body/div[@id='article-page']/main[@id='article-details']/div[@id='abstract']//p"
@@ -134,7 +136,7 @@ def parse_single_info(html_etree: etree.Element):
         keywords=keywords,
         abstract=abstract_text,
     )
-    print("abstract: \n", abstract_obj.to_complete_abs())
+    medLog.debug("abstract: \n %s" % abstract_obj.to_complete_abs())
 
     return SingleDocInfo(
         PMCID=PMCID,
@@ -151,7 +153,7 @@ def geteachinfo(dbpath):
 
     PMID_list = DBFetchAllPMID(dbpath, tablename)
     if PMID_list == None:
-        print("数据库读取出错，内容为空\n")
+        medLog.error("数据库读取出错，内容为空\n")
     start = time.time()
 
     # 使用异步的asyncio和aiohttp来一次性获取所有文献页面的详细情况
@@ -160,9 +162,8 @@ def geteachinfo(dbpath):
     # 注意BATCH_SIZE的大小
 
     results = []
-    print("Geteachinfo BATCH_SIZE: ", BATCH_SIZE)
-    
-    
+    medLog.info("Geteachinfo BATCH_SIZE: %s " % BATCH_SIZE)
+
     for i in range(0, len(PMID_list), BATCH_SIZE):
         target_pmid: [str] = []
         if i + BATCH_SIZE > len(PMID_list):
@@ -173,16 +174,16 @@ def geteachinfo(dbpath):
         try:
             results.extend(asyncio.run(WebHelper.GetAllHtmlAsync(target_pmid)))
         except Exception as e:
-            print_error("异步爬取singleinfo时发生错误: ", e)
-            print_error("默认自动跳过")
+            medLog.error("异步爬取singleinfo时发生错误: %s " % e)
+            medLog.error("默认自动跳过")
             continue
 
-    print(len(results))
+    medLog.info(len(results))
     end = time.time()
-    print("geteachinfo() takes %.2f seconds" % (end - start))
+    medLog.info("geteachinfo() takes %.2f seconds" % (end - start))
 
     for i in range(len(results)):
-        print("当前序号: ", i)
+        medLog.info("当前序号: %s " % i)
         singleDocInfo = parse_single_info(etree.HTML(results[i]))
 
         DBSaveInfo(singleDocInfo, dbpath)

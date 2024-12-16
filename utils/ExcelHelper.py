@@ -5,9 +5,11 @@ from time import sleep
 
 import pandas as pd
 
-from utils.LogHelper import print_error
 from config import projConfig
+from utils.LogHelper import medLog
+
 feedbacktime = projConfig.feedbacktime
+
 
 class ExcelHelper:
     savepath: str = f'./pubmed-{projConfig.savetime}.xlsx'
@@ -38,7 +40,7 @@ class ExcelHelper:
         """
         savepath = cls.savepath
         if os.path.exists(savepath):
-            print(f"指定的保存文件 {savepath[2:]} 已存在，文件重复\n\n")
+            medLog.info(f"指定的保存文件 {savepath[2:]} 已存在，文件重复\n\n")
             sleep(feedbacktime)
 
             if override:
@@ -48,7 +50,7 @@ class ExcelHelper:
                 if confirm.lower() in ("y", "yes"):
                     os.remove(savepath)
                 else:
-                    print("无法保存成Excel文件，文件名重复冲突\n")
+                    medLog.critical("无法保存成Excel文件，文件名重复冲突\n")
                     sys.exit(-1)
         sleep(feedbacktime)
 
@@ -92,41 +94,47 @@ class ExcelHelper:
                 df = pd.read_sql(sql, conn)
 
             freemark_column = df['freemark']
-            print(freemark_column)
+            medLog.debug(freemark_column)
             df.rename(columns=cls.rename_dict, inplace=True)
 
         except Exception as e:
-            print_error("将从数据库当中读取数据时发生错误: ", e)
+            medLog.error("将从数据库当中读取数据时发生错误: %s" % e)
 
         try:
             df.to_excel(cls.savepath, sheet_name=cls.tablename, index=False)
 
         except Exception as e:
-            print_error(f"\n爬取数据库信息保存到Excel失败: {e}\n")
+            medLog.error(f"\n爬取数据库信息保存到Excel失败: {e}\n")
 
 
 if __name__ == "__main__":
+    # todo
+    # 将excel导出功能整合到cli当中
     import DBHelper
 
     dbpath: str = 'pubmedsql'
     table_list: list = DBHelper.DBTableFinder(dbpath)
     if not table_list:
-        print("目标数据库不存在或者内容为空，请检查数据库，即将退出")
+        medLog.critical("目标数据库不存在或者内容为空，请检查数据库，即将退出")
         sleep(feedbacktime)
         sys.exit(-1)
 
-    print("\n")
+    medLog.info("\n")
     while True:
         sleep(0.5)
-        print("当前目录数据库中含有以下table(数据表格)，pubmed后面的数字为生成时精确到秒的时间\n", '----' * 20, '\n')
+        medLog.info("当前目录数据库中含有以下table(数据表格)，pubmed后面的数字为生成时精确到秒的时间\n")
+        medLog.info('----' * 20)
+        medLog.info("\n")
+
         for i, table_name in enumerate(table_list, start=1):
-            print(f"[{i}] {table_name}")
-        print("\n", '----' * 20)
+            medLog.info(f"[{i}] {table_name}")
+        medLog.info("\n")
+        medLog.info('----' * 20)
         try:
             x = int(input(
                 "\n请输入你想要导出生成Excel表格的数据库table编号，如1,2,3,4，输入0退出程序，注意不要输入上面的pubmedxxxxx编号\n\n"))
             if x == 0:
-                print("欢迎使用，程序即将结束")
+                medLog.warning("欢迎使用，程序即将结束")
                 sleep(0.5)
                 break
             if 1 <= x <= len(table_list):
@@ -134,15 +142,15 @@ if __name__ == "__main__":
                 # todo
                 savetime = index[6:]
                 ExcelHelper.PD_To_excel(dbpath)
-                print("此次保存执行完成，下一个循环")
+                medLog.info("此次保存执行完成，下一个循环")
                 sleep(3)
-                print('----' * 20, "\n")
+                medLog.info('----' * 20)
             else:
-                print("输入的编号不在范围内，请重新输入\n")
+                medLog.error("输入的编号不在范围内，请重新输入\n")
         except ValueError:
-            print_error('----' * 20, '\n')
-            print_error("输入错误，如1,2,3,4，输入0退出程序，注意不要输入上面的pubmedxxxxx编号\n\n")
-            print_error("重新输入，下一个循环")
+            medLog.error('----' * 20)
+            medLog.error("输入错误，如1,2,3,4，输入0退出程序，注意不要输入上面的pubmedxxxxx编号\n\n")
+            medLog.error("重新输入，下一个循环")
             sleep(3)
-            print_error('----' * 20, '\n')
+            medLog.error('----' * 20)
     os.system("pause")
