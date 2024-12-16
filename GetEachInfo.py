@@ -100,8 +100,10 @@ def parse_single_info(html_etree: etree.Element):
             Affiliation.append(str(i + 1) + "." + temp_affitem)
         print("Affiliation", Affiliation)
     
-    # fulltext link except the pmc link
+    # fulltext link
+    # not including the pmc link
     #//*[@id="article-page"]/aside/div/div[1]/div[1]/div/a
+    # 我们假设只有一个有效的full text link 多了暂时不管
     full_text_link:str = ""
     full_text_elem = html_etree.xpath(".//div[@class='full-text-links']//div[@class='full-text-links-list']/a/@href")
     if len(full_text_elem) != 0:

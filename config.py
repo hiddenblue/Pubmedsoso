@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 import shutil
 import time
 
@@ -11,6 +12,10 @@ class GlobalConfig:
         # 这个参数用于geteachinfo决定一次性通过异步下载多少页面的信息，默认50啦
         self.InfoBatchSize: int = 50
         self.PDF_BatchSize: int = 5
+        
+        # 日志等级配置
+        self.terminalLogLevel = logging.DEBUG
+        self.fileLogLevel = logging.INFO
 
 
 # 下面这句在从其他模块导入这个变量执行就会自动执行，并且是一个全局共享的状态

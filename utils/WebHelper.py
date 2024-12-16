@@ -21,13 +21,19 @@ class WebHelper:
     session = requests.Session()
 
     @classmethod
-    def createParamDcit(cls, keyword:str, year: Union[int, None] = None):
-                
-        search_keywords_dict = {}
-        search_keywords_dict['term'] = keyword.strip()
+    def parseParamDcit(cls, **kwargs):
+        """
+        这个函数接受任意个数的参数作为字典使用，但是在使用的时候需要显式指定参数名称
+        """
 
-        if year:
-            search_keywords_dict['filter'] = f'datesearch.y_{year}'
+        search_keywords_dict = {}        
+        if 'keyword' in kwargs and kwargs['keyword']:
+            search_keywords_dict['term'] = kwargs.get('keyword')
+
+        if 'year' in kwargs and kwargs['year'] is not None:
+            search_keywords_dict['filter'] = f'datesearch.y_{kwargs.get("year")}'
+            
+        
 
         # substitute the page size param with 50
         search_keywords_dict['size'] = 50
@@ -98,10 +104,10 @@ class WebHelper:
             return None
 
     @staticmethod
-    def GetSearchResultNum(keyword: str, year: int = None) -> int:
+    def GetSearchResultNum(**kwargs) -> int:
         # 根据上面输入的关键词初始化生成url参数
-        ParamDict = WebHelper.createParamDcit(keyword, year=year)
-        encoded_param = WebHelper.encodeParam(ParamDict)
+        paramDict: dict = WebHelper.parseParamDcit(**kwargs)
+        encoded_param = WebHelper.encodeParam(paramDict)
         try:
             html = WebHelper.getSearchHtml(encoded_param)
 

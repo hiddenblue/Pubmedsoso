@@ -11,6 +11,7 @@ from utils.ExcelHelper import ExcelHelper
 from utils.PDFHelper import PDFHelper
 from utils.WebHelper import WebHelper
 from utils.LogHelper import print_error
+from utils.Commandline import MedCli
 from config import ProjectInfo, projConfig
 
 feedbacktime = projConfig.feedbacktime
@@ -24,6 +25,7 @@ if __name__ == '__main__':
 
     # 命令行参数解析
     parser = argparse.ArgumentParser(
+        prog='Pubmedsoso',
         description="pubmedsoso is a python program for crawler article information and download pdf file",
         usage="python main.py keyword")
 
@@ -40,7 +42,7 @@ if __name__ == '__main__':
     # 下面几个是指定了可以使用的命令行参数 目前只支持三个
     # todo： 支持更多命令行参数选项
 
-    parser.add_argument("keyword", type=str,
+    parser.add_argument("-k","--keyword", type=str, default=None,
                         help='specify the keywords to search pubmed\n For example "headache"')
 
     parser.add_argument("-n", "--pagenum", type=int, metavar='',
@@ -76,6 +78,10 @@ if __name__ == '__main__':
                         'For example, -P PMC7447651. Default is None',
                         default=None)
     
+    parser.add_argument("-o", "--output", type=str, metavar='',
+                        help='add --output or -O to specify output path of pdf file'
+                        'For example, -o pmc7447651.pdf. Default is PMCxxxxxx.pdf',
+                        default='None')
 
     ####################################################################################################
 
@@ -84,6 +90,15 @@ if __name__ == '__main__':
     # print the hello info
     ProjectInfo.printProjectInfo()
     print("\n")
+    
+    
+    if args.keyword is None and (args.pmcid, args.pmid):
+        # 关键词为空，进入单篇处理模式
+        MedCli.SingleArticleMode(pmcid=args.pmcid, pmid=args.pmid)
+    else:
+        pass
+        
+    
     
     # check the directory variable. the path variable from cli is preferred.
     # the default pdf saving directory path is from config.py which is './document/pub'
@@ -106,7 +121,7 @@ if __name__ == '__main__':
     print(
         f"当前使用的命令行参数 搜索关键词: \"{args.keyword}\", 文献信息检索数量: {args.pagenum}, 年份：{args.year}, 文献下载数量: {args.downloadnum}, 下载文献的存储目录: {projConfig.pdfSavePath}\n")
     try:
-        result_num = WebHelper.GetSearchResultNum(args.keyword, args.year)
+        result_num = WebHelper.GetSearchResultNum(keyword=args.keyword, year=args.year)
     except Exception as err:
         raise
 
@@ -145,7 +160,7 @@ if __name__ == '__main__':
     # ?term=cell%2Bblood&filter=datesearch.y_1&size=20
 
     # 根据上面输入的关键词初始化生成url参数
-    ParamDict = WebHelper.createParamDcit(args.keyword, args.year)
+    ParamDict = WebHelper.parseParamDcit(keyword=args.keyword, year=args.year)
     encoded_param = WebHelper.encodeParam(ParamDict)
 
     # 从此处开始爬取数据
