@@ -28,7 +28,7 @@ if __name__ == '__main__':
         description="pubmedsoso is a python program for crawler article information and download pdf file",
         usage="python main.py -k keyword")
 
-    parser.add_argument('-v', '--version', action='version',
+    parser.add_argument('-v ', '--version', action='version',
                         version=f'\nCurrent the {ProjectInfo.ProjectName}\n\n version: {ProjectInfo.VersionInfo}\n' +
                                 f'Last updated date: {ProjectInfo.LastUpdate} \n' +
                                 f'Author: {ProjectInfo.AuthorName} \n',
@@ -85,7 +85,14 @@ if __name__ == '__main__':
     parser.add_argument("-l", "--loglevel", metavar='',
                         choices=('debug', 'info', 'warning', 'error', 'critical'),
                         help='set the terminal log level while the file log level'
-                             ' can only be configured in config.py. Default log level is info', default=None)
+                             'the choice of loglevel is "debug" "info" "warning" "error" "critical" '
+                             ' can only be configured in config.py. Default log level is info'
+                             ' ', default=None)
+    
+    parser.add_argument("-Y ", "--yes", action="store_true",
+                        help='add --yes or -Y to skip the confirmation process and start searching directly',
+                        default=False)
+    
     # todo 
     # add mutual exclusive group for some args
 
@@ -135,10 +142,13 @@ if __name__ == '__main__':
     except Exception as err:
         raise
 
-    if os.getenv("DEBUG"):
+    medLog.info("当前关键词在pubmed检索到的相关结果数量为: %s\n" % result_num)
+    
+    # add --yes parameter to skip the confirmation
+    if args.Yes is True:
         pass
     else:
-        medLog.info("当前关键词在pubmed检索到的相关结果数量为: %s\n" % result_num)
+
         medLog.info("是否要根据以上参数开始执行程序？y or n\n")
         startFlag = input()
         if startFlag == 'y' or startFlag == 'Y' or startFlag == 'Yes':

@@ -94,12 +94,16 @@ optional arguments:
 --downloadnum,-d    a digit number to  specify the number to download
 --directory   -D    use a vaild dir path specify the pdf save directory.
 --output      -o    add --output filename to appoint name of pdf file
---loglevel    -l    set the console log level, e.g debug
+
+--loglevel    -l    set the console log level, e.g -l debug
+--yes         -Y    add --yes to skip the confirmation process before searching
 ----
 
 _如果你熟悉IDE的话，可以在pycharm或者vscode等python环境下运行main.py_
 
 . 根据提示输入 `y` 或者 `n` 决定是否以给定的参数执行程序
+
+可以通过附加 `-Y` 参数来跳过二次确认过程
 
 image:assets/pubmedsoso_teminal.png[comfirm picture, 600]
 

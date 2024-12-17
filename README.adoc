@@ -89,6 +89,7 @@ optional arguments:
   --directory   -D    use a vaild dir path specify the pdf save directory.
   --output      -o    add --output filename to appoint name of pdf file
   --loglevel    -l    set the console log level, e.g debug
+  --yes         -Y    add --yes or -Y to skip the confirmation process before search
 ----
 
 *If you are familiar with IDEs, you can run `main.py` in Python environments such as `pycharm` or `vscode`.*
