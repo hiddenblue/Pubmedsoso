@@ -193,13 +193,16 @@ def geteachinfo(dbpath):
 
 
 if __name__ == '__main__':
-    PMID = "36191595"
-    ret = get_single_info(requests.Session(), PMID)
-    print("PMCID:", ret.PMCID)
-    print("PMID:", ret.PMID)
-    print("DOI:", ret.doi)
-    print("Affiliations:")
-    for aff in ret.affiliations:
-        print(aff)
-    print("Abstract:")
-    print(ret.abstract.to_complete_abs())
+    def local_test():
+        PMID = "36191595"
+        ret = get_single_info(requests.Session(), PMID)
+        print("PMCID:", ret.PMCID)
+        print("PMID:", ret.PMID)
+        print("DOI:", ret.doi)
+        print("Affiliations:")
+        for aff in ret.affiliations:
+            print(aff)
+        print("Abstract:")
+        print(ret.abstract.to_complete_abs())
+    
+    local_test()

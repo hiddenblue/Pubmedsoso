@@ -74,27 +74,30 @@ medLog = MedLogger().logger
 
 # 测试日志输出
 if __name__ == "__main__":
-    # medLog.setLevel(logging.WARNING)
-    MedLogger.setTerminalLogLevel(medLog, logging.ERROR)
+    def local_test():
+        # medLog.setLevel(logging.WARNING)
+        MedLogger.setTerminalLogLevel(medLog, logging.ERROR)
 
-    medLog.debug("这是一个 DEBUG 级别的日志")
-    medLog.info("这是一个 INFO 级别的日志")
-    medLog.warning("这是一个 WARNING 级别的日志")
-    medLog.error("这是一个 ERROR 级别的日志")
-    medLog.critical("这是一个 CRITICAL 级别的日志")
+        medLog.debug("这是一个 DEBUG 级别的日志")
+        medLog.info("这是一个 INFO 级别的日志")
+        medLog.warning("这是一个 WARNING 级别的日志")
+        medLog.error("这是一个 ERROR 级别的日志")
+        medLog.critical("这是一个 CRITICAL 级别的日志")
 
-    MedLogger.setTerminalLogLevel(medLog, logging.DEBUG)
+        MedLogger.setTerminalLogLevel(medLog, logging.DEBUG)
 
-    medLog.debug("这是一个 DEBUG 级别的日志1")
-    medLog.info("这是一个 INFO 级别的日志1")
-    medLog.warning("这是一个 WARNING 级别的日志1")
-    medLog.error("这是一个 ERROR 级别的日志1")
-    medLog.critical("这是一个 CRITICAL 级别的日志1")
+        medLog.debug("这是一个 DEBUG 级别的日志1")
+        medLog.info("这是一个 INFO 级别的日志1")
+        medLog.warning("这是一个 WARNING 级别的日志1")
+        medLog.error("这是一个 ERROR 级别的日志1")
+        medLog.critical("这是一个 CRITICAL 级别的日志1")
 
-    doctitle: str = "hello"
-    medLog.debug("doctitle: ", doctitle)
+        doctitle: str = "hello"
+        medLog.debug("doctitle: ", doctitle)
 
-    PMCID = "PMCID"
+        PMCID = "PMCID"
 
-    medLog.error("PMCID: %s" % PMCID,
-                 "从目标站获取pdf数据失败")
+        medLog.error("PMCID: %s" % PMCID,
+                     "从目标站获取pdf数据失败")
+        
+    local_test()

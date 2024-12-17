@@ -104,6 +104,7 @@ def parseSearchHtml(html: str) -> Optional[List[SingleSearchData]]:
                 freemark=FreeMark,
                 reviewmark=reviewMark
             ))
+            medLog.debug("\n")
         medLog.info("当前data数据长度%d\n" % len(ret))
         return ret
     except Exception as e:

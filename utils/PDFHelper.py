@@ -148,17 +148,17 @@ class PDFHelper:
             try:
                 response = await session.get(downloadUrl, headers=cls.headers)
                 content = await response.read()
-                medLog.info("%s.pdf 从目标站获取pdf数据成功" % tempid)
+                medLog.info("%s.pdf 从目标站获取pdf数据成功" % PMCID)
                 return content
 
             except (aiohttp.ClientResponseError, aiohttp.ClientHttpProxyError) as e:
                 cls.handle_error(e)
-                medLog.error("%s.pdf 从目标站获取pdf数据失败" % tempid)
+                medLog.error("%s.pdf 从目标站获取pdf数据失败" % PMCID)
                 return None
 
             except Exception as e:
                 cls.handle_error(e)
-                medLog.error("%s.pdf 从目标站获取pdf数据失败" % tempid, )
+                medLog.error("%s.pdf 从目标站获取pdf数据失败" % PMCID, )
                 return None
 
     @classmethod
@@ -222,11 +222,15 @@ class PDFHelper:
 
 
 if __name__ == "__main__":
-    pmcid = "PMC6817243"
-    pmid = "35132177"
-    "PMC3606786"
-    "PMC8989886"
-    dbpath = 'pubmedsql'
 
-    tempid = TempPMID(doctitle="A rapid and efficientDNAextraction protocol from fresh and frozenhumanblood samples.",
-                      PMCID=pmcid, PMID=pmid)
+    def local_test():
+        pmcid = "PMC6817243"
+        pmid = "35132177"
+        "PMC3606786"
+        "PMC8989886"
+        dbpath = 'pubmedsql'
+
+        tempid = TempPMID(doctitle="A rapid and efficientDNAextraction protocol from fresh and frozenhumanblood samples.",
+                          PMCID=pmcid, PMID=pmid)
+    
+    local_test()
