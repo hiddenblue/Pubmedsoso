@@ -144,7 +144,7 @@ def SaveSearchData(datalist: List[SingleSearchData], dbpath: str) -> None:
             continue
 
 
-def spiderpub(parameter: str, page_limit: int, resultNum: int) -> None:
+def searchEntry(parameter: str, page_limit: int, resultNum: int) -> None:
     """
     Main function to scrape PubMed search results.
 
@@ -183,7 +183,7 @@ def spiderpub(parameter: str, page_limit: int, resultNum: int) -> None:
             if SingleSearchPageData is not None:
                 datalist.extend(SingleSearchPageData)
 
-    dbpath = 'pubmedsql'
+    dbpath: str = projConfig.dbpath
     tablename = f'pubmed{projConfig.savetime}'
     txtname = f"pubmed{projConfig.savetime}.txt"
 
