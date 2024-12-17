@@ -14,6 +14,7 @@ feedbacktime = projConfig.feedbacktime
 class ExcelHelper:
     savepath: str = f'./pubmed-{projConfig.savetime}.xlsx'
     tablename: str = f'pubmed{projConfig.savetime}'
+    dbpath = projConfig.dbpath
     # 原始列名和新列名组成的字典
     rename_dict = {
         'id': '序号',
@@ -106,13 +107,13 @@ class ExcelHelper:
         except Exception as e:
             medLog.error(f"\n爬取数据库信息保存到Excel失败: {e}\n")
 
-    @staticmethod
-    def local_export():
+    @classmethod
+    def local_export(cls):
         # todo
         # 将excel导出功能整合到cli当中
         import DBHelper
 
-        dbpath: str = 'pubmedsql'
+        dbpath: str = cls.dbpath
         table_list: list = DBHelper.DBTableFinder(dbpath)
         if not table_list:
             medLog.critical("目标数据库不存在或者内容为空，请检查数据库，即将退出")

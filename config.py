@@ -9,8 +9,9 @@ class GlobalConfig:
         self.savetime: str = time.strftime("%Y%m%d%H%M%S")
         self.feedbacktime: float = 1.5
         self.pdfSavePath: str = "./document/pub"
+        self.dbpath: str = "./pubmedsql.db"
 
-        # 这个参数用于geteachinfo决定一次性通过异步下载多少页面的信息，默认50啦
+        # 这个参数用于GetEachInfo决定一次性通过异步下载多少页面的信息，默认50啦
         self.InfoBatchSize: int = 50
         self.PDF_BatchSize: int = 5
 

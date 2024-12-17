@@ -97,6 +97,7 @@ optional arguments:
 
 --loglevel    -l    set the console log level, e.g -l debug
 --yes         -Y    add --yes to skip the confirmation process before searching
+--clean       -c    clean the output directory and sqlite history table
 ----
 
 _如果你熟悉IDE的话，可以在pycharm或者vscode等python环境下运行main.py_

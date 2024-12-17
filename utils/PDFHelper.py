@@ -22,6 +22,13 @@ BATCH_SIZE = projConfig.PDF_BatchSize
 # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9034016/pdf/main.pdf
 
 class PDFHelper:
+    """
+    处理PDF下载 保存相关逻辑的代码
+    主要都是classmethod或者staticmethod
+    
+    """
+    
+    # 类变量
     baseurl = "http://www.ncbi.nlm.nih.gov/"
     # 没有采用https是因为听说https的审查会增加延时
     headers = {
@@ -38,9 +45,8 @@ class PDFHelper:
         'sec-fetch-user': '?1',
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
     }
-
-    def __init__(self, dbpath):
-        self.dbpath = dbpath
+    dbpath = projConfig.dbpath
+    tablename = 'pubmed%s' % projConfig.savetime
 
     @staticmethod
     def handle_error(e):
@@ -69,8 +75,8 @@ class PDFHelper:
         异步批量处理的pdf下载函数
         感觉写得稀烂啊
         """
-        tablename = 'pubmed%s' % projConfig.savetime
-        dbpath = 'pubmedsql'
+        tablename = cls.tablename
+        dbpath = cls.dbpath
         # 注意这个列表的数据类型，和名称并不是相符的
         # 这个返回的结果是有免费全文的，包括 FreeArticle 和 FreePMCArticle 两类
         free_article_list: [TempPMID] = DBFetchAllFreePMC(dbpath, tablename)
@@ -196,10 +202,10 @@ class PDFHelper:
             medLog.info("open success")
             file.write(content)
             file.close()
-            medLog.info("文件写入成功", "保存路径为%s" % savepath)
+            medLog.info("文件写入成功, 保存路径为%s" % savepath)
             return True
         except Exception as e:
-            medLog.error("文件写入失败", "保存路径为%s" % savepath)
+            medLog.error("文件写入失败, 保存路径为%s" % savepath)
             medLog.error(e)
             return False
 

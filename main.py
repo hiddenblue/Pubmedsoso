@@ -5,7 +5,7 @@ import sys
 from time import sleep
 
 from GetEachInfo import geteachinfo
-from GetSearchResult import spiderpub
+from GetSearchResult import searchEntry
 from config import ProjectInfo, projConfig
 from utils.Commandline import MedCli
 from utils.ExcelHelper import ExcelHelper
@@ -13,7 +13,9 @@ from utils.LogHelper import medLog, MedLogger
 from utils.PDFHelper import PDFHelper
 from utils.WebHelper import WebHelper
 
+# 从config.py当中导入一些配置信息，后续可能会被cli的参数override
 feedbacktime = projConfig.feedbacktime
+dbpath = projConfig.dbpath
 
 
 def printSpliter(length=25):
@@ -81,6 +83,8 @@ if __name__ == '__main__':
                         help='add --output or -o to specify output path of pdf file '
                              ' For example, -o pmc7447651.pdf. Default is PMCxxxxxx.pdf',
                         default='None')
+    
+    # 调试 清理 相关的参数
 
     parser.add_argument("-l", "--loglevel", metavar='',
                         choices=('debug', 'info', 'warning', 'error', 'critical'),
@@ -93,6 +97,10 @@ if __name__ == '__main__':
                         help='add --yes or -Y to skip the confirmation process and start searching directly',
                         default=False)
     
+    parser.add_argument("-c", "--clean", action="store_true",
+                        help='clean the output directory and sqlite history table',
+                        default=False)
+    
     # todo 
     # add mutual exclusive group for some args
 
@@ -100,23 +108,35 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    # 打印项目信息
     # print the hello info
     ProjectInfo.printProjectInfo()
     print("\n")
 
+    # 设置日志级别
     # alter the log level according to the cli args
     # cli first, overriding the config.py
     if args.loglevel is not None:
         loglevel = MedCli.parseLogLevel(args.loglevel)
         projConfig.loglevel = loglevel
         MedLogger.setTerminalLogLevel(medLog, loglevel)
+        
+    # 清理历史记录
+    if args.clean is True:
+        # 默认的excel和txt输出目录应该是在当前文件夹
+        MedCli.cleanHistory(directory="./", dbpath=dbpath, skip=args.yes)
+        medLog.info("Exiting")
+        sleep(feedbacktime)
+        sys.exit()
 
+    # 单篇处理模式
     if args.keyword is None and (args.pmcid, args.pmid):
         # 关键词为空，进入单篇处理模式
         MedCli.SingleArticleMode(pmcid=args.pmcid, pmid=args.pmid)
     else:
         pass
 
+    # 设置保存目录
     # check the directory variable. the path variable from cli is preferred.
     # the default pdf saving directory path is from config.py which is './document/pub'
     if args.directory is not None:
@@ -127,6 +147,7 @@ if __name__ == '__main__':
             medLog.error("Please check your config.py and cli parameter." "The program will exit.")
             sys.exit()
 
+    # 检查关键词
     if args.keyword.isspace() or args.keyword.isnumeric():
         medLog.error("pubmedsoso search keyword error\n")
         medLog.error("the program will exit.")
@@ -134,30 +155,32 @@ if __name__ == '__main__':
 
     ######################################################################################################
 
+    # 输出当前参数
     medLog.info(f"Current commandline parameters: {args.__dict__}\n")
     medLog.info(
         f"当前使用的命令行参数 搜索关键词: \"{args.keyword}\", 文献信息检索数量: {args.pagenum}, 年份：{args.year}, 文献下载数量: {args.downloadnum}, 下载文献的存储目录: {projConfig.pdfSavePath}\n")
+    
+    # 获取搜索结果数量
     try:
         result_num = WebHelper.GetSearchResultNum(keyword=args.keyword, year=args.year)
     except Exception as err:
         raise
 
     medLog.info("当前关键词在pubmed检索到的相关结果数量为: %s\n" % result_num)
-    
+
+    # 确认开始执行程序
     # add --yes parameter to skip the confirmation
-    if args.Yes is True:
+    if args.yes is True:
         pass
     else:
-
         medLog.info("是否要根据以上参数开始执行程序？y or n\n")
         startFlag = input()
-        if startFlag == 'y' or startFlag == 'Y' or startFlag == 'Yes':
-            pass
-        if startFlag in ["n", "N", "No", "no"]:
+            
+        if startFlag not in ['y', 'Y', 'Yes']:
             medLog.critical("程序终止执行\n\n")
             sleep(feedbacktime * 0.5)
             sys.exit()
-
+        
     ######################################################################################################
 
     printSpliter()
@@ -165,6 +188,7 @@ if __name__ == '__main__':
     printSpliter()
     sleep(0.5)
 
+    # 检查保存目录
     if os.path.exists(projConfig.pdfSavePath):
         medLog.info("文件储存目录检查正常，可以储存文件\n")
     else:
@@ -176,30 +200,33 @@ if __name__ == '__main__':
 
     sleep(feedbacktime)
 
-    dbpath = "./pubmedsql"
     # ?term=cell%2Bblood&filter=datesearch.y_1&size=20
 
     # 根据上面输入的关键词初始化生成url参数
+    # 解析URL参数
     ParamDict = WebHelper.parseParamDcit(keyword=args.keyword, year=args.year)
     encoded_param = WebHelper.encodeParam(ParamDict)
 
-    # 从此处开始爬取数据
 
     printSpliter()
-
-    spiderpub(encoded_param, args.pagenum, result_num)
+    
+    # 爬取搜索结果
+    searchEntry(encoded_param, args.pagenum, result_num)
 
     printSpliter()
     medLog.info("\n\n爬取搜索结果完成，开始执行单篇检索，耗时更久\n\n")
 
+    # 获取每篇文章信息
     geteachinfo(dbpath)
-
+    
     printSpliter()
     medLog.info("\n\n爬取搜索结果完成，开始执行文献下载，耗时更久\n\n")
 
+    # 下载PDF
     # PDFHelper.PDFBatchDonwload(args.download_num)
     PDFHelper.PDFBatchDownloadEntry(args.downloadnum)
-
+    
+    # 生成Excel表格
     ExcelHelper.PD_To_excel(dbpath, override=True)
     medLog.info("爬取最终结果信息已经自动保存到excel表格中，文件名为%s" % ExcelHelper.tablename)
     medLog.info(f"爬取的所有文献已经保存到{projConfig.pdfSavePath}目录下")
